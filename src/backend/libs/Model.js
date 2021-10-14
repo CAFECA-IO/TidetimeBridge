@@ -1,7 +1,9 @@
+/* eslint-disable no-unused-vars */
 class Model {
   constructor({ condition, query }) {
     return Promise.resolve(this);
   }
+
   save() {
     return Promise.resolve(this);
   }
