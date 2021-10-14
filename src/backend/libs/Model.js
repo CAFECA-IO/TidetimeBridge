@@ -18,6 +18,19 @@ class Model {
     return Promise.resolve(this);
   }
 
+  // set key(key) {
+  //   this._key = key;
+  // }
+
+  // get key() {
+  //   switch (this.myTableName) {
+  //     case 'bridgeDetail':
+  //       return `${this.srcChainID}-${this.srcTxHash}`;
+  //     default:
+  //       return this._key;
+  //   }
+  // }
+
   async save() {
     // return Promise.resolve(this);
     try {
@@ -30,7 +43,7 @@ class Model {
         throw new Error({ message: 'Should include key.', code: Codes.DB_SAVE_FAIL });
       }
     } catch (e) {
-      console.trace('Save failed.', e);
+      console.trace('Save failed.', JSON.stringify(e));
       throw new Error({ message: `Save ${this.myTableName} to level db failed.`, code: Codes.DB_SAVE_FAIL });
     }
   }

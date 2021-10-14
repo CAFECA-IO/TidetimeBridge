@@ -1,6 +1,5 @@
-const deposit = require('./deposit.json');
-const withdraw = require('./withdraw.json');
+const bridgeDetail = require('./bridgeDetail.json');
 
 module.exports = {
-  deposit, withdraw,
+  bridgeDetail,
 };

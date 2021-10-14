@@ -1,0 +1,14 @@
+{
+  "key": "id",
+  "srcChainID": "string",
+  "srcTokenAddress": "string",
+  "destChainID": "string",
+  "destTokenAddress": "string",
+  "amount": "string",
+  "srcAddress": "string",
+  "destAddress": "string",
+  "srcTxHash": "string",
+  "destTxHash": "string",
+  "receivedTimestamp": "timestamp",
+  "finalized": "boolean"
+}
