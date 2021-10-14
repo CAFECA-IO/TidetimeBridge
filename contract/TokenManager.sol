@@ -128,16 +128,16 @@ contract CustomToken is StandardToken {
     string public version = "1.0";
     string public name;
     string public symbol;
-    string public chainID;
-    address public fromContractAddress;
+    bytes4 public chainID;
+    bytes32 public fromContractAddress;
 
     // constructor
     constructor(
         string memory name_,
         string memory symbol_,
         uint256 decimals_,
-        string memory chainID_,
-        address fromContractAddress_
+        bytes4 chainID_,
+        bytes32 fromContractAddress_
     )
         payable
         public
@@ -245,8 +245,8 @@ contract TokenManager is SafeMath {
     }
 
     function getToken(
-        string memory chainID_,
-        address fromContractAddress_
+        bytes4 chainID_,
+        bytes32 fromContractAddress_
     )
         public
         view
@@ -259,8 +259,8 @@ contract TokenManager is SafeMath {
         string memory name_,
         string memory symbol_,
         uint256 decimals_,
-        string memory chainID_,
-        address fromContractAddress_
+        bytes4 chainID_,
+        bytes32 fromContractAddress_
     )
         onlyOwner
         internal
@@ -276,8 +276,8 @@ contract TokenManager is SafeMath {
         string memory name_,
         string memory symbol_,
         uint256 decimals_,
-        string memory chainID_,
-        address fromContractAddress_,
+        bytes4 chainID_,
+        bytes32 fromContractAddress_,
         address userAddress_,
         uint256 amount_,
         string memory transactionHash_
@@ -298,8 +298,8 @@ contract TokenManager is SafeMath {
     
     function burnToken(
         address tokenAddress_,
-        address userAddress_,
         uint256 amount_,
+        address userAddress_,
         string memory transactionHash_
     )
         onlyOwner
@@ -320,7 +320,7 @@ contract TokenManager is SafeMath {
         owner = newOwner_;
     }
     
-    function append(string memory a, address b) internal pure returns (string memory) {
+    function append(bytes4 a, bytes32 b) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 }
