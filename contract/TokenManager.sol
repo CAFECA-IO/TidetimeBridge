@@ -254,60 +254,59 @@ contract TokenManager is SafeMath {
         address tokenAddress = ShadowTokens[append(chainID_, fromContractAddress_)];
         return (tokenAddress);
     }
-    
-    // function getToken(
-    //     uint256 index_
-    // )
-    //     public
-    //     view
-    // returns(address _tokenAddress) {
-    //     address tokenAddress = Tokens[index_];
-    //     return (tokenAddress);
-    // }
 
     function createToken(
         string memory name_,
         string memory symbol_,
         uint256 decimals_,
-        uint256 amount_,
-        address userAddress_,
         string memory chainID_,
         address fromContractAddress_
     )
         onlyOwner
-        public
+        internal
     returns(bool _success) {
-        require(amount_ > 0);
-        require(getToken(chainID_, fromContractAddress_) == address(0), "Token existed!!!");
+        require(getToken(chainID_, fromContractAddress_) == address(0), "Token existed.");
         CustomToken token = new CustomToken(name_, symbol_, decimals_, chainID_, fromContractAddress_);
         address tokenAddress = address(token);
-        // Tokens[TokenCount] = tokenAddress;
         ShadowTokens[append(chainID_,fromContractAddress_)] = tokenAddress;
-        token.mint(userAddress_, amount_);
-        // TokenCount++;
         return true;
     }
 
     function mintToken(
-        address tokenAddress_,
+        string memory name_,
+        string memory symbol_,
+        uint256 decimals_,
+        string memory chainID_,
+        address fromContractAddress_,
+        address userAddress_,
         uint256 amount_,
-        address userAddress_
+        string memory transactionHash_
     )
         onlyOwner
         public
     returns(bool _success) {
-        return CustomToken(tokenAddress_).mint(userAddress_, amount_);
+        require(amount_ > 0, "invalid amount.");
+        require(bytes(transactionHash_).length > 0, "Invalid transactionHash length");
+        address tokenAddress = getToken(chainID_, fromContractAddress_);
+        if (tokenAddress == address(0)) {
+            createToken(name_, symbol_, decimals_, chainID_, fromContractAddress_);
+            tokenAddress = getToken(chainID_, fromContractAddress_);
+        }
+        return CustomToken(tokenAddress).mint(userAddress_, amount_);
         // return true;
     }
     
     function burnToken(
         address tokenAddress_,
+        address userAddress_,
         uint256 amount_,
-        address userAddress_
+        string memory transactionHash_
     )
         onlyOwner
         public
     returns(bool _success) {
+        require(amount_ > 0, "invalid amount.");
+        require(bytes(transactionHash_).length > 0, "Invalid transactionHash length");
         return CustomToken(tokenAddress_).burnFrom(userAddress_, amount_);
         // return true;
     }
