@@ -3,16 +3,17 @@
 const Model = require('./Model');
 
 class ModelFactory {
-  static create({ struct }) {
-    return Promise.resolve(new Model());
+  static async create({ database, struct }) {
+    return new Model({ database, struct });
   }
 
-  static find({ struct, condition }) {
-    return Promise.resolve(new Model());
+  static async find({ database, struct, condition }) {
+    const model = await new Model({ database, struct });
+    return model.find({ condition });
   }
 
-  static save({ model }) {
-    return Promise.resolve(true);
+  static async save(model) {
+    return model.save();
   }
 }
 
