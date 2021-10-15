@@ -1,4 +1,4 @@
-const bridgeDetail = require('./bridgeDetail.json');
+const bridgeDetail = require('./bridgeDetail');
 
 module.exports = {
   bridgeDetail,

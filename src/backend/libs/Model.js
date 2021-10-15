@@ -1,50 +1,32 @@
-/* eslint-disable no-unused-vars */
-
 const Structs = require('../structs');
-const DataType = require('../structs/datatype');
-const Codes = require('./Codes');
 
 class Model {
   constructor({ database, struct }) {
-    this.myStruct = Structs[struct];
-    if (!this.myStruct) {
+    const StructClass = Structs[struct];
+    if (!StructClass) {
       return Promise.reject(new Error(`Struct '${struct}' is not support.`));
     }
-    this.db = database.leveldb;
-    this.myTableName = struct;
-    Object.keys(this.myStruct).forEach((key) => {
-      this[key] = DataType[this.myStruct[key]];
-    });
+    const { leveldb } = database;
+    this.db = leveldb;
+    this.tableName = struct;
+    this.struct = new StructClass({});
     return Promise.resolve(this);
   }
-
-  // set key(key) {
-  //   this._key = key;
-  // }
-
-  // get key() {
-  //   switch (this.myTableName) {
-  //     case 'bridgeDetail':
-  //       return `${this.srcChainID}-${this.srcTxHash}`;
-  //     default:
-  //       return this._key;
-  //   }
-  // }
 
   async save() {
     // return Promise.resolve(this);
     try {
-      const data = JSON.parse(JSON.stringify(this));
-      if (data.key && data.key !== '') {
-        const dataKeys = Object.keys(data);
-        const valueIndex = (dataKeys.indexOf('key') + 1) % dataKeys.length;
-        await this.db.put(data.key, data[dataKeys[valueIndex]]);
-      } else {
-        throw new Error({ message: 'Should include key.', code: Codes.DB_SAVE_FAIL });
+      const { data, check } = this.struct;
+      console.log(check);
+      console.log(data);
+      if (check) {
+        const res = await this.db.put(data.key, data);
+        return res;
       }
+      throw new Error('Should include key.');
     } catch (e) {
-      console.trace('Save failed.', JSON.stringify(e));
-      throw new Error({ message: `Save ${this.myTableName} to level db failed.`, code: Codes.DB_SAVE_FAIL });
+      console.trace('Save failed.', e);
+      throw e;
     }
   }
 
@@ -53,31 +35,17 @@ class Model {
       if (!condition) {
         return Promise.reject(new Error('Condition should not be null.'));
       }
-      const thisKeys = Object.keys(this);
-      const conditionKeys = Object.keys(condition);
-      for (let i = 0; i < conditionKeys.length; i++) {
-        const key = conditionKeys[i];
-        const keyIndex = thisKeys.indexOf(key);
-        if (keyIndex !== -1) {
-          const valueIndex = (keyIndex + 1) % thisKeys.length;
-          try {
-            this[key] = condition[key];
-            const value = await this.db.get(condition[key]);
-            this[thisKeys[valueIndex]] = value;
-          } catch (e) {
-            if (e.type !== 'NotFoundError') throw e;
-          }
-        }
-      }
+      const res = await this.db.get(condition);
+      this.struct = new Structs[this.tableName](res);
       return this;
     } catch (e) {
       console.trace('Find failed.', e);
-      throw new Error({ message: `Qurey ${this.myTableName} from level db failed.`, code: Codes.DB_FIND_FAIL });
+      throw e;
     }
   }
 
   _tableName() {
-    return String(this.myTableName);
+    return String(this.tableName);
   }
 }
 
