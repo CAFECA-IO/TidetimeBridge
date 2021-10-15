@@ -20,7 +20,7 @@ class Model {
       console.log(check);
       console.log(data);
       if (check) {
-        const res = await this.db.put(data.key, data);
+        const res = await this._save(data);
         return res;
       }
       throw new Error('Should include key.');
@@ -30,16 +30,42 @@ class Model {
     }
   }
 
+  async _save(data) {
+    const res = await this.db.put(data.key, data);
+    return res;
+  }
+
   async find({ condition }) {
     try {
       if (!condition) {
         return Promise.reject(new Error('Condition should not be null.'));
       }
-      const res = await this.db.get(condition);
+      const res = this._find({ condition });
       this.struct = new Structs[this.tableName](res);
       return this;
     } catch (e) {
       console.trace('Find failed.', e);
+      throw e;
+    }
+  }
+
+  async _find({ condition }) {
+    const res = await this.db.get(condition);
+    return res;
+  }
+
+  async update({ condition, data }) {
+    try {
+      const findRes = await this._find({ condition });
+      this.struct = new Structs[this.tableName](findRes);
+      for (const key of Object.keys(data)) {
+        this.struct[key] = data[key];
+      }
+      await this._save(this.struct.data);
+
+      return this;
+    } catch (e) {
+      console.trace('update failed.', e);
       throw e;
     }
   }

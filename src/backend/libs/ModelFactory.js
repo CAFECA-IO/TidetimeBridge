@@ -12,6 +12,13 @@ class ModelFactory {
     return model.find({ condition });
   }
 
+  static async update({
+    database, struct, condition, data,
+  }) {
+    const model = await new Model({ database, struct });
+    return model.update({ condition, data });
+  }
+
   static async save(model) {
     return model.save();
   }

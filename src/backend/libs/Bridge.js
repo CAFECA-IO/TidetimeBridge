@@ -30,8 +30,13 @@ class Bridge extends Bot {
         struct.srcTxHash = '0x7c2c0b576fb618926694dd64c81626e2b3781d5d6dd4b7d47da801dc70c3ed5a';
         await ModelFactory.save(bridgeDetailModel);
 
-        const res = await ModelFactory.find({ database: this.database, struct: 'bridgeDetail', condition: struct.key });
-        console.log('read res:', res);
+        const readRes = await ModelFactory.find({ database: this.database, struct: 'bridgeDetail', condition: struct.key });
+        console.log('read res:', readRes);
+
+        const updateRes = await ModelFactory.update({
+          database: this.database, struct: 'bridgeDetail', condition: struct.key, data: { amount: 10, finalized: true },
+        });
+        console.log('update res:', updateRes);
         return this;
       });
   }
