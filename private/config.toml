@@ -9,17 +9,16 @@ debug = false
 
 [blockchain]
 type = "ethereum"
-blockchainId = '80001F51'
 
 [database]
 type = "firebase"
 
 [tidewalletjs]
 apiURL = 'https://staging.tidewallet.io/api/v1'
-apiKey = ''
-apiSecret = ''
-thirdPartyId = 'myAppleID'
-installId = 'myInstallID'
+apiKey = 'f2a76e8431b02f263a0e1a0c34a70466'
+apiSecret = '9e37d67450dc906042fde75113ecb78c'
+thirdPartyId = '116632174227441198441'
+installId = 'cTfD4pJXY3yzDeMXt5fQ94E2Pj4oFLLu'
 debugMode = true
 networkPublish = false
 
