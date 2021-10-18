@@ -103,6 +103,22 @@ class Bridge extends Bot {
 
     }
   }
+
+  async getJob() {
+    return true;
+  }
+
+  async doJob() {
+    return true;
+  }
+
+  async finishJob() {
+    return true;
+  }
+
+  async updateJob() {
+    return true;
+  }
 }
 
 module.exports = Bridge;
