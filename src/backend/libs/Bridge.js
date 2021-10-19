@@ -45,26 +45,6 @@ class Bridge extends Bot {
   start() {
     return super.start()
       .then(() => this);
-
-    // // testdb
-    //   .then(async () => {
-    //     const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
-    //     const { struct } = bridgeDetailModel;
-    //     // struct.key = '123';
-    //     struct.srcChainID = '8000003C';
-    //     struct.srcAddress = '0x3841C791e5d10595B665F9b118877e28d1327Ee8';
-    //     struct.srcTxHash = '0x7c2c0b576fb618926694dd64c81626e2b3781d5d6dd4b7d47da801dc70c3ed5a';
-    //     await ModelFactory.save(bridgeDetailModel);
-
-    //     const readRes = await ModelFactory.find({ database: this.database, struct: 'bridgeDetail', condition: struct.key });
-    //     console.log('read res:', readRes);
-
-    //     const updateRes = await ModelFactory.update({
-    //       database: this.database, struct: 'bridgeDetail', condition: struct.key, data: { amount: 10, finalized: true },
-    //     });
-    //     console.log('update res:', updateRes);
-    //     return this;
-    //   });
   }
 
   ready() {

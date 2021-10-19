@@ -20,7 +20,7 @@ class Model {
         const res = await this._save(data);
         return res;
       }
-      throw new Error('Should include key.');
+      throw new Error('Should include pk.');
     } catch (e) {
       console.trace('Save failed.', e);
       throw e;
@@ -28,17 +28,17 @@ class Model {
   }
 
   async _save(data) {
-    const key = `${this.tableName}-${data.key}`;
+    const key = `${this.tableName}-${data.pk}`;
     const res = await this.db.put(key, data);
     return res;
   }
 
   async find({ condition }) {
     try {
-      if (!condition) {
-        return Promise.reject(new Error('Condition should not be null.'));
+      if (!condition.key) {
+        return Promise.reject(new Error('key should not be null.'));
       }
-      const res = await this._find(condition);
+      const res = await this._find(condition.key);
       this.struct = new Structs[this.tableName](res);
       return this;
     } catch (e) {
@@ -47,20 +47,49 @@ class Model {
     }
   }
 
-  async _find(condition) {
-    const key = `${this.tableName}-${condition}`;
-    const res = await this.db.get(key);
-    console.log('_find res', res);
-    res.key = res.key.replace(`${this.tableName}-`);
+  async _find(key) {
+    const thisKey = `${this.tableName}-${key}`;
+    const res = await this.db.get(thisKey);
+    return res;
+  }
+
+  async findPrefix({ condition }) {
+    try {
+      const res = await this._findPrefix(condition);
+      return res;
+    } catch (e) {
+      console.trace('findPrefix failed.', e);
+      throw e;
+    }
+  }
+
+  async _findPrefix(condition) {
+    const thisKey = `${this.tableName}-${condition.key}`;
+    const option = {
+      gte: thisKey,
+      lte: thisKey.substring(0, thisKey.length - 1)
+        + String.fromCharCode(thisKey[thisKey.length - 1].charCodeAt() + 1),
+    };
+    if (condition.limit) {
+      option.limit = condition.limit;
+    }
+    const readRes = this.db.createReadStream(option);
+    const res = [];
+    for await (const data of readRes) {
+      res.push(data);
+    }
     return res;
   }
 
   async update({ condition, data }) {
     try {
-      const findRes = await this._find(condition);
+      if (!condition.key) {
+        return Promise.reject(new Error('key should not be null.'));
+      }
+      const findRes = await this._find(condition.key);
       this.struct = new Structs[this.tableName](findRes);
-      for (const key of Object.keys(data)) {
-        this.struct[key] = data[key];
+      for (const thisKey of Object.keys(data)) {
+        this.struct[thisKey] = data[thisKey];
       }
       await this._save(this.struct.data);
 
@@ -76,21 +105,21 @@ class Model {
       if (this.struct.nextKey === undefined) throw new Error('this struct do not support findNext.');
 
       // call by ModelFactory
-      if (this.struct.key === '' && condition) {
-        const findModel = await this._find(condition);
+      if (this.struct.pk === '' && condition.key) {
+        const findModel = await this._find(condition.key);
         const res = await this._find(findModel.struct.nextKey);
         this.struct = new Structs[this.tableName](res);
         return this;
       }
 
       // call by model
-      if (!!this.struct.key && this.struct.nextKey) {
+      if (!!this.struct.pk && this.struct.nextKey) {
         const res = await this._find(this.struct.nextKey);
         const newModel = new Model({ database: this.db, struct: this.tableName });
         newModel.struct = new Structs[newModel.tableName](res);
         return newModel;
       }
-      throw new Error('condition or nextKey not exist.');
+      throw new Error('pk or nextKey not exist.');
     } catch (e) {
       console.trace('findNext failed.', e);
       throw e;
@@ -102,21 +131,21 @@ class Model {
       if (this.struct.prevKey === undefined) throw new Error('this struct do not support findPrev.');
 
       // call by ModelFactory
-      if (this.struct.key === '' && condition) {
-        const findModel = await this._find(condition);
+      if (this.struct.pk === '' && condition.key) {
+        const findModel = await this._find(condition.key);
         const res = await this._find(findModel.struct.prevKey);
         this.struct = new Structs[this.tableName](res);
         return this;
       }
 
       // call by model
-      if (!!this.struct.key && this.struct.prevKey) {
+      if (!!this.struct.pk && this.struct.prevKey) {
         const res = await this._find(this.struct.prevKey);
         const newModel = new Model({ database: this.db, struct: this.tableName });
         newModel.struct = new Structs[newModel.tableName](res);
         return newModel;
       }
-      throw new Error('condition or nextKey not exist.');
+      throw new Error('pk or nextKey not exist.');
     } catch (e) {
       console.trace('findNext failed.', e);
       throw e;

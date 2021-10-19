@@ -5,7 +5,7 @@ class jobListItem {
    *
    */
   constructor({
-    key = '',
+    pk = '',
     srcChainID = '',
     srcTxHash = '',
     destTxHash = '',
@@ -13,7 +13,7 @@ class jobListItem {
     step = 0,
     finalized = false,
   }) {
-    this._key = key;
+    this._pk = pk;
     this._srcChainID = srcChainID;
     this._srcTxHash = srcTxHash;
     this._destTxHash = destTxHash;
@@ -23,7 +23,7 @@ class jobListItem {
   }
 
   // setter
-  set key(key) { this._key = key; }
+  set pk(pk) { this._pk = pk; }
 
   set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
 
@@ -38,7 +38,7 @@ class jobListItem {
   set finalized(finalized) { this._finalized = finalized; }
 
   // getter
-  get key() { return this._key ? this._key : `${this.srcChainID}-${this.srcTxHash}`; }
+  get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
 
   get srcChainID() { return this._srcChainID; }
 
@@ -54,7 +54,7 @@ class jobListItem {
 
   get data() {
     return {
-      key: this.key,
+      pk: this.pk,
       srcChainID: this.srcChainID,
       srcTxHash: this.srcTxHash,
       destTxHash: this.destTxHash,

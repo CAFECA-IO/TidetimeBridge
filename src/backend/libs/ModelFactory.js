@@ -38,6 +38,14 @@ class ModelFactory {
     const model = await new Model({ database: leveldb, struct });
     return model.findNext({ condition });
   }
+
+  static async findPrefix({
+    database, struct, condition,
+  }) {
+    const { leveldb } = database;
+    const model = await new Model({ database: leveldb, struct });
+    return model.findPrefix({ condition });
+  }
 }
 
 module.exports = ModelFactory;

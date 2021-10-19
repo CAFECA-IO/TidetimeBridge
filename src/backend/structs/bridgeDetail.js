@@ -5,7 +5,7 @@ class bridgeDetail {
    *
    */
   constructor({
-    key = '',
+    pk = '',
     srcChainID = '',
     srcTokenAddress = '',
     destChainID = '',
@@ -19,7 +19,7 @@ class bridgeDetail {
     receivedTimestamp = Date.now(),
     finalized = false,
   }) {
-    this._key = key;
+    this._pk = pk;
     this._srcChainID = srcChainID;
     this._srcTokenAddress = srcTokenAddress;
     this._destChainID = destChainID;
@@ -35,7 +35,7 @@ class bridgeDetail {
   }
 
   // setter
-  set key(key) { this._key = key; }
+  set pk(pk) { this._pk = pk; }
 
   set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
 
@@ -62,7 +62,7 @@ class bridgeDetail {
   set finalized(finalized) { this._finalized = finalized; }
 
   // getter
-  get key() { return this._key ? this._key : `${this.srcChainID}-${this.srcTxHash}`; }
+  get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
 
   get srcChainID() { return this._srcChainID; }
 
@@ -90,7 +90,7 @@ class bridgeDetail {
 
   get data() {
     return {
-      key: this.key,
+      pk: this.pk,
       srcChainID: this.srcChainID,
       srcTokenAddress: this.srcTokenAddress,
       destChainID: this.destChainID,
