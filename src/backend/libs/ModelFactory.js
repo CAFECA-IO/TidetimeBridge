@@ -48,6 +48,12 @@ class ModelFactory {
     return model.findPrefix({ condition });
   }
 
+  static async remove({ database, struct, condition }) {
+    const { leveldb } = database;
+    const model = await new Model({ database: leveldb, struct });
+    return model.remove({ condition });
+  }
+
   static getStructClass(struct) {
     const StructClass = Structs[struct];
     if (!StructClass) {

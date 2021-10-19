@@ -2,10 +2,14 @@ const Bot = require('./Bot');
 const ModelFactory = require('./ModelFactory');
 
 const JOB_INTERVAL = 1000;
+const DONE_PREFIX = 'DONE-';
+const MAX_WORKER = 10;
+
 class Worker extends Bot {
   constructor() {
     super();
     this.name = 'Worker';
+    this.tableName = 'jobListItem';
   }
 
   init({
@@ -16,6 +20,7 @@ class Worker extends Bot {
     })
       .then(() => {
         this.working = false;
+        this.workingList = {};
       })
       .then(() => this);
   }
@@ -24,9 +29,6 @@ class Worker extends Bot {
     return super.start()
       .then(() => {
         this.getJob();
-        this.getJobInterval = setInterval(async () => {
-          await this.getJob();
-        }, JOB_INTERVAL);
       })
       .then(() => this);
 
@@ -62,6 +64,12 @@ class Worker extends Bot {
   }
 
   async getJob() {
+    // 1. get job from db
+    // 2. do job
+    // 3. update job
+    // 4. finish job
+    // 5. call getjob
+    // 6. if no job set timeount and call get job
     try {
       if (this.working) {
         console.warn('get job fail, is working');
@@ -70,23 +78,34 @@ class Worker extends Bot {
       this.working = true;
       const res = await ModelFactory.findPrefix({
         database: this.database,
-        struct: 'jobListItem',
+        struct: this.tableName,
         condition: {
           key: '',
-          limit: 1,
+          limit: MAX_WORKER,
         },
       });
-      if (res && res.length > 0) {
-        const [jobData] = res;
-        const StructClass = ModelFactory.getStructClass('jobListItem');
-        const jobListItemStruct = new StructClass(jobData.value);
-        await this.doJob(jobListItemStruct);
+
+      // add working list
+      for (const jobData of res) {
+        if (!this.workingList[jobData.value.pk]) {
+          this.workingList[jobData.value.pk] = jobData.value;
+          const StructClass = ModelFactory.getStructClass(this.tableName);
+          const jobListItemStruct = new StructClass(jobData.value);
+          this.doJob(jobListItemStruct);
+        }
       }
 
-      this.working = false;
+      // set interval
+      if (Object.keys(this.workingList).length === 0) {
+        setTimeout(() => {
+          this.getJob();
+        }, JOB_INTERVAL);
+      }
     } catch (e) {
-      console.log('getJob failed.', e);
-      this.working = false;
+      console.trace('getJob failed.', e);
+      setTimeout(() => {
+        this.getJob();
+      }, JOB_INTERVAL);
       return e;
     }
     return true;
@@ -96,15 +115,50 @@ class Worker extends Bot {
     return true;
   }
 
-  async finishJob() {
-    return true;
+  async finishJob(jobListItemStruct) {
+    const oriPk = jobListItemStruct.pk;
+    try {
+      // 1. save ori pk
+      // 2. save new pk with DONE_PREFIX
+      // 3. save jobListItem with newPk into db
+      // 4. remove oriPk from db
+      // 5. remove workingList
+      // 6. call getjob
+      const newPk = `${DONE_PREFIX}${jobListItemStruct.pk}`;
+
+      const jobListItemModelNew = await ModelFactory.create({
+        database: this.database,
+        struct: this.tableName,
+      });
+
+      jobListItemModelNew.struct = jobListItemStruct;
+      jobListItemModelNew.struct.pk = newPk;
+      const saveRes = await jobListItemModelNew.save();
+
+      const removeRes = await ModelFactory.remove({
+        database: this.database,
+        struct: this.tableName,
+        condition: {
+          key: oriPk,
+        },
+      });
+
+      delete this.workingList[oriPk];
+
+      this.getJob();
+    } catch (e) {
+      console.trace('finishJob failed.', e);
+      delete this.workingList[oriPk];
+
+      this.getJob();
+    }
   }
 
   async updateJob(jobListItemStruct) {
     try {
       const res = await ModelFactory.update({
         database: this.database,
-        struct: 'jobListItem',
+        struct: this.tableName,
         condition: {
           key: jobListItemStruct.pk,
         },
@@ -113,9 +167,9 @@ class Worker extends Bot {
       console.log(res);
     } catch (e) {
       console.trace('updateJob failed', e);
-      throw e;
+      delete this.workingList[jobListItemStruct.pk];
+      this.getJob();
     }
-    return true;
   }
 }
 

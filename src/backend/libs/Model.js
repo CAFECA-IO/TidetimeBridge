@@ -152,6 +152,26 @@ class Model {
     }
   }
 
+  async remove({ condition }) {
+    // return Promise.resolve(this);
+    try {
+      if (!condition.key) {
+        return Promise.reject(new Error('key should not be null.'));
+      }
+      const res = await this._remove(condition.key);
+      return res;
+    } catch (e) {
+      console.trace('Save failed.', e);
+      throw e;
+    }
+  }
+
+  async _remove(data) {
+    const key = `${this.tableName}-${data.pk}`;
+    const res = await this.db.del(key);
+    return res;
+  }
+
   _tableName() {
     return String(this.tableName);
   }
