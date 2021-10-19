@@ -75,32 +75,26 @@ class Bridge extends Bot {
   async createJob(data) {
     try {
       const { account, tx } = data.value;
+
       const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
+      const { struct: structBD } = bridgeDetailModel;
+      structBD.srcChainID = account.blockchainId;
+      structBD.srcTokenAddress = account.type === 'token' ? account.contract : '0x0000000000000000000000000000000000000000';
+      structBD.srcAddress = tx.sourceAddresses;
+      structBD.srcTxHash = tx.txid;
+      structBD.receivedTimestamp = tx.timestamp;
+      structBD.finalized = false;
 
-      // check deposit or withdraw
-      if (account.blockchainId === this.config.blockchain.blockchainId) {
-        // withdraw
-      } else {
-        // deposit
-      }
-      // ask contract to get shadow token info
-      // ask mapping if is btc address
+      const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });
+      const { struct: structJLI } = jobListItem;
+      structJLI.srcChainID = account.blockchainId;
+      structJLI.srcTxHash = tx.txid;
+      structJLI.step = 1;
 
-      // const { struct } = bridgeDetailModel;
-      // struct._srcChainID = account.blockchainId;
-      // struct._srcTokenAddress = account.type === 'token' ? account.contract : '0x0000000000000000000000000000000000000000';
-      // struct._destChainID = this.config.blockchain.blockchainId;
-      // struct._destTokenAddress = destTokenAddress;
-      // struct._amount = amount;
-      // in eth struct._srcAddress === struct._destAddress
-      // struct._srcAddress = tx.sourceAddresses;
-      // struct._destAddress = '';
-      // struct._srcTxHash = tx.txid;
-      // struct._destTxHash = '';
-      // struct._receivedTimestamp = tx.timestamp;
-      // struct._finalized = false;
+      await bridgeDetailModel.save();
+      await jobListItem.save();
     } catch (error) {
-
+      setTimeout(this.createJob(data), 1000);
     }
   }
 }
