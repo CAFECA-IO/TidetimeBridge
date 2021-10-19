@@ -14,31 +14,31 @@ class Bridge extends Bot {
     return super.init({
       config, database, logger, i18n,
     })
-      .then(() => {
-        this.tw = new TideWallet();
-        this.tw.on('ready', () => { console.log('TideWallet is Ready'); });
-        this.tw.on('notice', (data) => {
-          console.log('TideWallet get Notice');
-          console.log(data);
-          this.createJob(data);
-        });
-        this.tw.on('update', () => { console.log('TideWallet Data Updated'); });
+    // .then(() => {
+    //   this.tw = new TideWallet();
+    //   this.tw.on('ready', () => { console.log('TideWallet is Ready'); });
+    //   this.tw.on('notice', (data) => {
+    //     console.log('TideWallet get Notice');
+    //     console.log(data);
+    //     this.createJob(data);
+    //   });
+    //   this.tw.on('update', () => { console.log('TideWallet Data Updated'); });
 
-        const api = {
-          apiURL: this.config.tidewalletjs.apiURL,
-          apiKey: this.config.tidewalletjs.apiKey,
-          apiSecret: this.config.tidewalletjs.apiSecret,
-        };
-        const user = {
-          thirdPartyId: this.config.tidewalletjs.thirdPartyId,
-          installId: this.config.tidewalletjs.installId,
-        };
-        const { debugMode, networkPublish } = this.config.tidewalletjs;
+    //   const api = {
+    //     apiURL: this.config.tidewalletjs.apiURL,
+    //     apiKey: this.config.tidewalletjs.apiKey,
+    //     apiSecret: this.config.tidewalletjs.apiSecret,
+    //   };
+    //   const user = {
+    //     thirdPartyId: this.config.tidewalletjs.thirdPartyId,
+    //     installId: this.config.tidewalletjs.installId,
+    //   };
+    //   const { debugMode, networkPublish } = this.config.tidewalletjs;
 
-        return this.tw.init({
-          user, api, debugMode, networkPublish,
-        });
-      })
+      //   return this.tw.init({
+      //     user, api, debugMode, networkPublish,
+      //   });
+      // })
       .then(() => this);
   }
 

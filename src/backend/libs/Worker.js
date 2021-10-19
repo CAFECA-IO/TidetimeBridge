@@ -59,6 +59,25 @@ class Worker extends Bot {
     //       database: this.database, struct: 'bridgeDetail', condition: { key: struct.pk }, data: { amount: 10, finalized: true },
     //     });
     //     console.log('update res:', updateRes);
+
+    //     const removeRes = await ModelFactory.remove({
+    //       database: this.database,
+    //       struct: 'bridgeDetail',
+    //       condition: {
+    //         key: struct.pk,
+    //       },
+    //     });
+    //     console.log('removeRes:', removeRes);
+    //     const findPrefix2 = await ModelFactory.findPrefix({
+    //       database: this.database,
+    //       struct: 'bridgeDetail',
+    //       condition: {
+    //         key: '',
+    //         limit: 5,
+    //       },
+    //     });
+    //     console.log('findPrefix res2:', findPrefix2);
+
     //     return this;
     //   });
   }

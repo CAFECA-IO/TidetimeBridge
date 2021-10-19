@@ -28,18 +28,6 @@ class ModelFactory {
     return model.save();
   }
 
-  static async findNext({ database, struct, condition }) {
-    const { leveldb } = database;
-    const model = await new Model({ database: leveldb, struct });
-    return model.findNext({ condition });
-  }
-
-  static async findPrev({ database, struct, condition }) {
-    const { leveldb } = database;
-    const model = await new Model({ database: leveldb, struct });
-    return model.findNext({ condition });
-  }
-
   static async findPrefix({
     database, struct, condition,
   }) {
