@@ -77,8 +77,10 @@ class Worker extends Bot {
         },
       });
       if (res && res.length > 0) {
-        const [job] = res;
-        await this.doJob(job);
+        const [jobData] = res;
+        const StructClass = ModelFactory.getStructClass('jobListItem');
+        const jobListItemStruct = new StructClass(jobData.value);
+        await this.doJob(jobListItemStruct);
       }
 
       this.working = false;
@@ -90,7 +92,7 @@ class Worker extends Bot {
     return true;
   }
 
-  async doJob(job) {
+  async doJob(jobListItemStruct) {
     return true;
   }
 
@@ -98,7 +100,21 @@ class Worker extends Bot {
     return true;
   }
 
-  async updateJob() {
+  async updateJob(jobListItemStruct) {
+    try {
+      const res = await ModelFactory.update({
+        database: this.database,
+        struct: 'jobListItem',
+        condition: {
+          key: jobListItemStruct.pk,
+        },
+        data: jobListItemStruct.data,
+      });
+      console.log(res);
+    } catch (e) {
+      console.trace('updateJob failed', e);
+      throw e;
+    }
     return true;
   }
 }

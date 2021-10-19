@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 // const Utils = require('./Utils');
 const Model = require('./Model');
+const Structs = require('../structs');
 
 class ModelFactory {
   static async create({ database, struct }) {
@@ -45,6 +46,14 @@ class ModelFactory {
     const { leveldb } = database;
     const model = await new Model({ database: leveldb, struct });
     return model.findPrefix({ condition });
+  }
+
+  static getStructClass(struct) {
+    const StructClass = Structs[struct];
+    if (!StructClass) {
+      return Promise.reject(new Error(`Struct '${struct}' is not support.`));
+    }
+    return StructClass;
   }
 }
 
