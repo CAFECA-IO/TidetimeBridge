@@ -16,8 +16,6 @@ class Model {
     // return Promise.resolve(this);
     try {
       const { data, check } = this.struct;
-      console.log(check);
-      console.log(data);
       if (check) {
         const res = await this._save(data);
         return res;
@@ -31,8 +29,6 @@ class Model {
 
   async _save(data) {
     const key = `${this.tableName}-${data.key}`;
-    console.log('save key', key);
-    console.log('save data', data);
     const res = await this.db.put(key, data);
     return res;
   }
@@ -53,8 +49,8 @@ class Model {
 
   async _find(condition) {
     const key = `${this.tableName}-${condition}`;
-    console.log('_find key', key);
     const res = await this.db.get(key);
+    console.log('_find res', res);
     res.key = res.key.replace(`${this.tableName}-`);
     return res;
   }

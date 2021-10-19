@@ -15,6 +15,7 @@ class bridgeDetail {
     destAddress = '',
     srcTxHash = '',
     destTxHash = '',
+    mintOrBurnTxHash = '',
     receivedTimestamp = Date.now(),
     finalized = false,
   }) {
@@ -28,6 +29,7 @@ class bridgeDetail {
     this._destAddress = destAddress;
     this._srcTxHash = srcTxHash;
     this._destTxHash = destTxHash;
+    this._mintOrBurnTxHash = mintOrBurnTxHash;
     this._receivedTimestamp = receivedTimestamp;
     this._finalized = finalized;
   }
@@ -52,6 +54,8 @@ class bridgeDetail {
   set srcTxHash(srcTxHash) { this._srcTxHash = srcTxHash; }
 
   set destTxHash(destTxHash) { this._destTxHash = destTxHash; }
+
+  set mintOrBurnTxHash(mintOrBurnTxHash) { this._mintOrBurnTxHash = mintOrBurnTxHash; }
 
   set receivedTimestamp(receivedTimestamp) { this._receivedTimestamp = receivedTimestamp; }
 
@@ -78,6 +82,8 @@ class bridgeDetail {
 
   get destTxHash() { return this._destTxHash; }
 
+  get mintOrBurnTxHash() { return this._mintOrBurnTxHash; }
+
   get receivedTimestamp() { return this._receivedTimestamp; }
 
   get finalized() { return this._finalized; }
@@ -94,6 +100,7 @@ class bridgeDetail {
       destAddress: this.destAddress,
       srcTxHash: this.srcTxHash,
       destTxHash: this.destTxHash,
+      mintOrBurnTxHash: this.mintOrBurnTxHash,
       receivedTimestamp: this.receivedTimestamp,
       finalized: this.finalized,
     };
