@@ -1,8 +1,8 @@
 const Bot = require('./Bot');
 const ModelFactory = require('./ModelFactory');
+const { JOB_STATE } = require('../structs/jobListItem');
 
 const JOB_INTERVAL = 1000;
-const DONE_PREFIX = 'DONE-';
 const MAX_WORKER = 10;
 
 class Worker extends Bot {
@@ -19,7 +19,6 @@ class Worker extends Bot {
       config, database, logger, i18n,
     })
       .then(() => {
-        this.working = false;
         this.workingList = {};
       })
       .then(() => this);
@@ -29,8 +28,8 @@ class Worker extends Bot {
     return super.start()
       .then(() => {
         this.getJob();
-      })
-      .then(() => this);
+      });
+    // .then(() => this);
 
     // // testdb
     //   .then(async () => {
@@ -80,6 +79,48 @@ class Worker extends Bot {
 
     //     return this;
     //   });
+
+    // // test Work
+    // .then(async () => {
+    //   const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });
+    //   const { struct: structJLI } = jobListItem;
+    //   structJLI.srcChainID = '8000003C';
+    //   structJLI.srcTxHash = '0x7c2c0b576fb618926694dd64c81626e2b3781d5d6dd4b7d47da801dc70c3ed5a';
+    //   structJLI.step = 1;
+    //   await jobListItem.save();
+
+    //   const findPrefix = await ModelFactory.findPrefix({
+    //     database: this.database,
+    //     struct: 'jobListItem',
+    //     condition: {
+    //       key: JOB_STATE.PENDING,
+    //       limit: 5,
+    //     },
+    //   });
+    //   console.log('findPrefix res:', findPrefix);
+
+    //   await this.finishJob(structJLI);
+
+    //   const findPrefix2 = await ModelFactory.findPrefix({
+    //     database: this.database,
+    //     struct: 'jobListItem',
+    //     condition: {
+    //       key: JOB_STATE.PENDING,
+    //       limit: 5,
+    //     },
+    //   });
+    //   console.log('findPrefix2 res:', findPrefix2);
+
+    //   const findPrefix3 = await ModelFactory.findPrefix({
+    //     database: this.database,
+    //     struct: 'jobListItem',
+    //     condition: {
+    //       key: JOB_STATE.DONE,
+    //       limit: 5,
+    //     },
+    //   });
+    //   console.log('findPrefix3 res:', findPrefix3);
+    // });
   }
 
   async getJob() {
@@ -90,16 +131,11 @@ class Worker extends Bot {
     // 5. call getjob
     // 6. if no job set timeount and call get job
     try {
-      if (this.working) {
-        console.warn('get job fail, is working');
-        return;
-      }
-      this.working = true;
       const res = await ModelFactory.findPrefix({
         database: this.database,
         struct: this.tableName,
         condition: {
-          key: '',
+          key: JOB_STATE.PENDING,
           limit: MAX_WORKER,
         },
       });
@@ -131,6 +167,16 @@ class Worker extends Bot {
   }
 
   async doJob(jobListItemStruct) {
+    try {
+      const isDeposit = this.isDeposit(jobListItemStruct.srcChainID);
+      if (isDeposit) {
+
+      } else {
+
+      }
+    } catch (e) {
+
+    }
     return true;
   }
 
@@ -143,7 +189,6 @@ class Worker extends Bot {
       // 4. remove oriPk from db
       // 5. remove workingList
       // 6. call getjob
-      const newPk = `${DONE_PREFIX}${jobListItemStruct.pk}`;
 
       const jobListItemModelNew = await ModelFactory.create({
         database: this.database,
@@ -151,7 +196,7 @@ class Worker extends Bot {
       });
 
       jobListItemModelNew.struct = jobListItemStruct;
-      jobListItemModelNew.struct.pk = newPk;
+      jobListItemModelNew.struct.finalized = true;
       const saveRes = await jobListItemModelNew.save();
 
       const removeRes = await ModelFactory.remove({
@@ -189,6 +234,15 @@ class Worker extends Bot {
       delete this.workingList[jobListItemStruct.pk];
       this.getJob();
     }
+  }
+
+  /**
+   *
+   * @param {string} srcChainID
+   * @returns
+   */
+  isDeposit(srcChainID) {
+    return srcChainID.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
   }
 }
 

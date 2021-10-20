@@ -1,3 +1,8 @@
+const JOB_STATE = {
+  PENDING: 'PENDING',
+  DONE: 'DONE',
+};
+
 class jobListItem {
   /**
    *
@@ -38,7 +43,11 @@ class jobListItem {
   set finalized(finalized) { this._finalized = finalized; }
 
   // getter
-  get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
+  get pk() {
+    let state = JOB_STATE.PENDING;
+    if (this.finalized) state = JOB_STATE.DONE;
+    return this._pk ? this._pk : `${state}.${this.srcChainID}-${this.srcTxHash}`;
+  }
 
   get srcChainID() { return this._srcChainID; }
 
@@ -69,4 +78,4 @@ class jobListItem {
   }
 }
 
-module.exports = jobListItem;
+module.exports = { jobListItem, JOB_STATE };
