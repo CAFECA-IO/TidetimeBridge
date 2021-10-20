@@ -303,15 +303,17 @@ contract TokenManager is SafeMath {
         address tokenAddress_,
         uint256 amount_,
         address userAddress_,
-        string memory transactionHash_
+        bytes32 transactionHash_
     )
         onlyOwner
         public
     returns(bool _success) {
         require(amount_ > 0, "invalid amount.");
-        require(bytes(transactionHash_).length > 0, "Invalid transactionHash length");
-        return CustomToken(tokenAddress_).burnFrom(userAddress_, amount_);
-        // return true;
+        bool burnRes = CustomToken(tokenAddress_).burnFrom(userAddress_, amount_);
+        if (burnRes) {
+            emit Teleport(tokenAddress_, userAddress_, amount_, transactionHash_);
+        }
+        return burnRes;
     }
     
     function transferOwnership(
