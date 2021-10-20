@@ -64,6 +64,7 @@ class Bridge extends Bot {
       structBD.srcTxHash = tx.txid;
       structBD.receivedTimestamp = tx.timestamp;
       structBD.finalized = false;
+      structBD.triggerData = JSON.stringify(data.value);
 
       const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });
       const { struct: structJLI } = jobListItem;

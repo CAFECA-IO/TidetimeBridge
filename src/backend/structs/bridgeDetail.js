@@ -18,6 +18,7 @@ class bridgeDetail {
     mintOrBurnTxHash = '',
     receivedTimestamp = Date.now(),
     finalized = false,
+    triggerData = '',
   }) {
     this._pk = pk;
     this._srcChainID = srcChainID;
@@ -32,6 +33,7 @@ class bridgeDetail {
     this._mintOrBurnTxHash = mintOrBurnTxHash;
     this._receivedTimestamp = receivedTimestamp;
     this._finalized = finalized;
+    this._triggerData = triggerData;
   }
 
   // setter
@@ -61,6 +63,8 @@ class bridgeDetail {
 
   set finalized(finalized) { this._finalized = finalized; }
 
+  set triggerData(triggerData) { this._triggerData = triggerData; }
+
   // getter
   get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
 
@@ -88,6 +92,8 @@ class bridgeDetail {
 
   get finalized() { return this._finalized; }
 
+  get triggerData() { return this._triggerData; }
+
   get data() {
     return {
       pk: this.pk,
@@ -103,6 +109,7 @@ class bridgeDetail {
       mintOrBurnTxHash: this.mintOrBurnTxHash,
       receivedTimestamp: this.receivedTimestamp,
       finalized: this.finalized,
+      triggerData: this.triggerData,
     };
   }
 
