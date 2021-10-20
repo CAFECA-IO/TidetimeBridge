@@ -34,8 +34,28 @@ class Utils {
         });
   }
 
-  static toHex(n) {
-    return `0x${(n).toString(16)}`;
+  static isHex(data) {
+    return /^0x[a-fA-F0-9]*$/.test(data);
+  }
+
+  static toHex(data) {
+    let result;
+    if (data === undefined) {
+      result = '';
+    } else if (this.isHex(data)) {
+      result = data.substr(2);
+    } else if (Number.isInteger(data)) {
+      result = data.toString(16);
+    } else if (typeof data === 'string') {
+      result = Buffer.from(data).toString('hex');
+    } else {
+      try {
+        result = data.toString(16);
+      } catch (e) {
+        result = '';
+      }
+    }
+    return result;
   }
 
   static zeroFill(i, l) {
@@ -581,6 +601,27 @@ class Utils {
         }
       }
     };
+  }
+
+  static isBTCLike(chainId) {
+    switch (chainId) {
+      case '80000000':
+      case 'F0000000':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static isETHLike(chainId) {
+    switch (chainId) {
+      case '8000003C':
+      case 'F000003C':
+      case '80001F51':
+        return true;
+      default:
+        return false;
+    }
   }
 }
 
