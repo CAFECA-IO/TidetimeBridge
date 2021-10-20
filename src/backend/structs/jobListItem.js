@@ -1,4 +1,7 @@
-const START_KEY = 'START_KEY';
+const JOB_STATE = {
+  PENDING: 'PENDING',
+  DONE: 'DONE',
+};
 
 class jobListItem {
   /**
@@ -7,54 +10,72 @@ class jobListItem {
    *
    */
   constructor({
-    key = '',
-    prevKey = '',
-    nextKey = '',
-    retry = 0,
+    pk = '',
+    srcChainID = '',
+    srcTxHash = '',
+    destTxHash = '',
+    mintOrBurnTxHash = '',
+    step = 0,
     finalized = false,
   }) {
-    this._key = key;
-    this._prevKey = prevKey;
-    this._nextKey = nextKey;
-    this._retry = retry;
+    this._pk = pk;
+    this._srcChainID = srcChainID;
+    this._srcTxHash = srcTxHash;
+    this._destTxHash = destTxHash;
+    this._mintOrBurnTxHash = mintOrBurnTxHash;
+    this._step = step;
     this._finalized = finalized;
   }
 
   // setter
-  set key(key) { this._key = key; }
+  set pk(pk) { this._pk = pk; }
 
-  set prevKey(prevKey) { this._prevKey = prevKey; }
+  set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
 
-  set nextKey(nextKey) { this._nextKey = nextKey; }
+  set srcTxHash(srcTxHash) { this._srcTxHash = srcTxHash; }
 
-  set retry(retry) { this._retry = retry; }
+  set destTxHash(destTxHash) { this._destTxHash = destTxHash; }
+
+  set mintOrBurnTxHash(mintOrBurnTxHash) { this._mintOrBurnTxHash = mintOrBurnTxHash; }
+
+  set step(step) { this._step = step; }
 
   set finalized(finalized) { this._finalized = finalized; }
 
   // getter
-  get key() { return `${this._key}`; }
+  get pk() {
+    let state = JOB_STATE.PENDING;
+    if (this.finalized) state = JOB_STATE.DONE;
+    return this._pk ? this._pk : `${state}.${this.srcChainID}-${this.srcTxHash}`;
+  }
 
-  get prevKey() { return this._prevKey; }
+  get srcChainID() { return this._srcChainID; }
 
-  get nextKey() { return this._nextKey; }
+  get srcTxHash() { return this._srcTxHash; }
 
-  get retry() { return this._retry; }
+  get destTxHash() { return this._destTxHash; }
+
+  get mintOrBurnTxHash() { return this._mintOrBurnTxHash; }
+
+  get step() { return this._step; }
 
   get finalized() { return this._finalized; }
 
   get data() {
     return {
-      key: this.key,
-      prevKey: this.prevKey,
-      nextKey: this.nextKey,
-      retry: this.retry,
+      pk: this.pk,
+      srcChainID: this.srcChainID,
+      srcTxHash: this.srcTxHash,
+      destTxHash: this.destTxHash,
+      mintOrBurnTxHash: this.mintOrBurnTxHash,
+      step: this._step,
       finalized: this.finalized,
     };
   }
 
   get check() {
-    return (!!this.key && !!this.prevKey && !!this.nextKey);
+    return (!!this.srcChainID && !!this.srcTxHash);
   }
 }
 
-module.exports = { jobListItem, START_KEY };
+module.exports = { jobListItem, JOB_STATE };

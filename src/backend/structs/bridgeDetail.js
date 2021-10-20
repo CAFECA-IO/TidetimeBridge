@@ -5,7 +5,7 @@ class bridgeDetail {
    *
    */
   constructor({
-    key = '',
+    pk = '',
     srcChainID = '',
     srcTokenAddress = '',
     destChainID = '',
@@ -15,10 +15,12 @@ class bridgeDetail {
     destAddress = '',
     srcTxHash = '',
     destTxHash = '',
+    mintOrBurnTxHash = '',
     receivedTimestamp = Date.now(),
     finalized = false,
+    triggerData = '',
   }) {
-    this._key = key;
+    this._pk = pk;
     this._srcChainID = srcChainID;
     this._srcTokenAddress = srcTokenAddress;
     this._destChainID = destChainID;
@@ -28,12 +30,14 @@ class bridgeDetail {
     this._destAddress = destAddress;
     this._srcTxHash = srcTxHash;
     this._destTxHash = destTxHash;
+    this._mintOrBurnTxHash = mintOrBurnTxHash;
     this._receivedTimestamp = receivedTimestamp;
     this._finalized = finalized;
+    this._triggerData = triggerData;
   }
 
   // setter
-  set key(key) { this._key = key; }
+  set pk(pk) { this._pk = pk; }
 
   set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
 
@@ -53,12 +57,16 @@ class bridgeDetail {
 
   set destTxHash(destTxHash) { this._destTxHash = destTxHash; }
 
+  set mintOrBurnTxHash(mintOrBurnTxHash) { this._mintOrBurnTxHash = mintOrBurnTxHash; }
+
   set receivedTimestamp(receivedTimestamp) { this._receivedTimestamp = receivedTimestamp; }
 
   set finalized(finalized) { this._finalized = finalized; }
 
+  set triggerData(triggerData) { this._triggerData = triggerData; }
+
   // getter
-  get key() { return this._key ? this._key : `${this.srcChainID}-${this.srcTxHash}`; }
+  get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
 
   get srcChainID() { return this._srcChainID; }
 
@@ -78,13 +86,17 @@ class bridgeDetail {
 
   get destTxHash() { return this._destTxHash; }
 
+  get mintOrBurnTxHash() { return this._mintOrBurnTxHash; }
+
   get receivedTimestamp() { return this._receivedTimestamp; }
 
   get finalized() { return this._finalized; }
 
+  get triggerData() { return this._triggerData; }
+
   get data() {
     return {
-      key: this.key,
+      pk: this.pk,
       srcChainID: this.srcChainID,
       srcTokenAddress: this.srcTokenAddress,
       destChainID: this.destChainID,
@@ -94,8 +106,10 @@ class bridgeDetail {
       destAddress: this.destAddress,
       srcTxHash: this.srcTxHash,
       destTxHash: this.destTxHash,
+      mintOrBurnTxHash: this.mintOrBurnTxHash,
       receivedTimestamp: this.receivedTimestamp,
       finalized: this.finalized,
+      triggerData: this.triggerData,
     };
   }
 

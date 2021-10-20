@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 // const Utils = require('./Utils');
 const Model = require('./Model');
+const Structs = require('../structs');
 
 class ModelFactory {
   static async create({ database, struct }) {
@@ -27,16 +28,26 @@ class ModelFactory {
     return model.save();
   }
 
-  static async findNext({ database, struct, condition }) {
+  static async findPrefix({
+    database, struct, condition,
+  }) {
     const { leveldb } = database;
     const model = await new Model({ database: leveldb, struct });
-    return model.findNext({ condition });
+    return model.findPrefix({ condition });
   }
 
-  static async findPrev({ database, struct, condition }) {
+  static async remove({ database, struct, condition }) {
     const { leveldb } = database;
     const model = await new Model({ database: leveldb, struct });
-    return model.findNext({ condition });
+    return model.remove({ condition });
+  }
+
+  static getStructClass(struct) {
+    const StructClass = Structs[struct];
+    if (!StructClass) {
+      return Promise.reject(new Error(`Struct '${struct}' is not support.`));
+    }
+    return StructClass;
   }
 }
 
