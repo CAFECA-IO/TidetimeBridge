@@ -230,6 +230,7 @@ contract TokenManager is SafeMath {
     
     event NewToken(address indexed _contract);
     event Received(address indexed sender, uint256 indexed value);
+    event Teleport(address tokenAddress, address userAddress, uint256 amount, bytes32 transactionHash);
 
     constructor()
         payable
@@ -280,20 +281,22 @@ contract TokenManager is SafeMath {
         bytes32 fromContractAddress_,
         address userAddress_,
         uint256 amount_,
-        string memory transactionHash_
+        bytes32 transactionHash_
     )
         onlyOwner
         public
     returns(bool _success) {
         require(amount_ > 0, "invalid amount.");
-        require(bytes(transactionHash_).length > 0, "Invalid transactionHash length");
         address tokenAddress = getToken(chainID_, fromContractAddress_);
         if (tokenAddress == address(0)) {
             createToken(name_, symbol_, decimals_, chainID_, fromContractAddress_);
             tokenAddress = getToken(chainID_, fromContractAddress_);
         }
-        return CustomToken(tokenAddress).mint(userAddress_, amount_);
-        // return true;
+        bool mintRes = CustomToken(tokenAddress).mint(userAddress_, amount_);
+        if (mintRes) {
+            emit Teleport(tokenAddress, userAddress_, amount_, transactionHash_);
+        }
+        return mintRes;
     }
     
     function burnToken(
