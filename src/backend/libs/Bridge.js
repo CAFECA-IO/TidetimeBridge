@@ -20,7 +20,7 @@ class Bridge extends Bot {
         this.tw.on('notice', (data) => {
           console.log('TideWallet get Notice');
           console.log(data);
-          this.createJob(data);
+          if (data.value.tx.direction === 'receive') { this.createJob(data); }
         });
         this.tw.on('update', () => { console.log('TideWallet Data Updated'); });
 
@@ -58,17 +58,19 @@ class Bridge extends Bot {
 
       const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
       const { struct: structBD } = bridgeDetailModel;
-      structBD.srcChainID = account.blockchainId;
+      structBD.srcChainId = account.blockchainId;
+      structBD.accountId = account.accountId;
       structBD.srcTokenAddress = account.type === 'token' ? account.contract : '0x0000000000000000000000000000000000000000';
       structBD.srcAddress = tx.sourceAddresses;
       structBD.srcTxHash = tx.txid;
       structBD.receivedTimestamp = tx.timestamp;
       structBD.finalized = false;
+      structBD.amount = tx.amount;
       structBD.triggerData = JSON.stringify(data.value);
 
       const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });
       const { struct: structJLI } = jobListItem;
-      structJLI.srcChainID = account.blockchainId;
+      structJLI.srcChainId = account.blockchainId;
       structJLI.srcTxHash = tx.txid;
       structJLI.step = 1;
 

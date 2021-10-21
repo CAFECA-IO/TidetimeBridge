@@ -11,7 +11,7 @@ class jobListItem {
    */
   constructor({
     pk = '',
-    srcChainID = '',
+    srcChainId = '',
     srcTxHash = '',
     destTxHash = '',
     mintOrBurnTxHash = '',
@@ -19,7 +19,7 @@ class jobListItem {
     finalized = false,
   }) {
     this._pk = pk;
-    this._srcChainID = srcChainID;
+    this._srcChainId = srcChainId;
     this._srcTxHash = srcTxHash;
     this._destTxHash = destTxHash;
     this._mintOrBurnTxHash = mintOrBurnTxHash;
@@ -30,7 +30,7 @@ class jobListItem {
   // setter
   set pk(pk) { this._pk = pk; }
 
-  set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
+  set srcChainId(srcChainId) { this._srcChainId = srcChainId; }
 
   set srcTxHash(srcTxHash) { this._srcTxHash = srcTxHash; }
 
@@ -46,10 +46,10 @@ class jobListItem {
   get pk() {
     let state = JOB_STATE.PENDING;
     if (this.finalized) state = JOB_STATE.DONE;
-    return this._pk ? this._pk : `${state}.${this.srcChainID}-${this.srcTxHash}`;
+    return this._pk ? this._pk : `${state}.${this.srcChainId}-${this.srcTxHash}`;
   }
 
-  get srcChainID() { return this._srcChainID; }
+  get srcChainId() { return this._srcChainId; }
 
   get srcTxHash() { return this._srcTxHash; }
 
@@ -64,7 +64,7 @@ class jobListItem {
   get data() {
     return {
       pk: this.pk,
-      srcChainID: this.srcChainID,
+      srcChainId: this.srcChainId,
       srcTxHash: this.srcTxHash,
       destTxHash: this.destTxHash,
       mintOrBurnTxHash: this.mintOrBurnTxHash,
@@ -74,8 +74,10 @@ class jobListItem {
   }
 
   get check() {
-    return (!!this.srcChainID && !!this.srcTxHash);
+    return (!!this.srcChainId && !!this.srcTxHash);
   }
+
+  get bridgeDetailKey() { return `${this.srcChainId}-${this.srcTxHash}`; }
 }
 
 module.exports = { jobListItem, JOB_STATE };

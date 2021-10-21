@@ -86,7 +86,7 @@ class TokenManagerDataBuilder {
    * @param {Object} param
    * @param {string} param.name
    * @param {string} param.symbol
-   * @param {string} param.decimals
+   * @param {number} param.decimals
    * @param {string} param.chainId
    * @param {string} param.fromContractAddress
    * @param {string} param.userAddress

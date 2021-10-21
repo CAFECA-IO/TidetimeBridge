@@ -1,6 +1,10 @@
+const BigNumber = require('bignumber.js');
+
 const Bot = require('./Bot');
 const ModelFactory = require('./ModelFactory');
 const { JOB_STATE } = require('../structs/jobListItem');
+const Transaction = require('../structs/Transaction');
+const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
 
 const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
@@ -26,17 +30,24 @@ class Worker extends Bot {
 
   start() {
     return super.start()
+      .then(async () => {
+        const br = await this.getBot('Bridge');
+        this.tw = br.tw;
+        const overview = await this.tw.overview();
+        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this.config.blockchain.blockchainId
+            && info.type === 'currency'));
+      })
       .then(() => {
         this.getJob();
-      });
-    // .then(() => this);
+      })
+      .then(() => this);
 
     // // testdb
     //   .then(async () => {
     //     const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
     //     const { struct } = bridgeDetailModel;
     //     // struct.pk = '123';
-    //     struct.srcChainID = '80001F51';
+    //     struct.srcChainId = '80001F51';
     //     struct.srcAddress = '0x3841C791e5d10595B665F9b118877e28d1327Ee8';
     //     struct.srcTxHash = '0x7c2c0b576fb618926694dd64c81626e2b3781d5d6dd4b7d47da801dc70c3ed5a';
     //     await ModelFactory.save(bridgeDetailModel);
@@ -84,7 +95,7 @@ class Worker extends Bot {
     // .then(async () => {
     //   const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });
     //   const { struct: structJLI } = jobListItem;
-    //   structJLI.srcChainID = '8000003C';
+    //   structJLI.srcChainId = '8000003C';
     //   structJLI.srcTxHash = '0x7c2c0b576fb618926694dd64c81626e2b3781d5d6dd4b7d47da801dc70c3ed5a';
     //   structJLI.step = 1;
     //   await jobListItem.save();
@@ -167,15 +178,76 @@ class Worker extends Bot {
   }
 
   async doJob(jobListItemStruct) {
+    console.log('doJob', jobListItemStruct);
     try {
-      const isDeposit = this.isDeposit(jobListItemStruct.srcChainID);
-      if (isDeposit) {
+      // get bridgeDetail
+      const detailModel = await ModelFactory.find({
+        database: this.database,
+        struct: 'bridgeDetail',
+        condition: {
+          key: jobListItemStruct.bridgeDetailKey,
+        },
+      });
+      console.log('detailModel', detailModel.struct);
+      console.log('is deposit', this.isDeposit(jobListItemStruct.srcChainId));
 
+      if (this.isDeposit(jobListItemStruct.srcChainId)) {
+        // 1. call contract mint
+        // 2. finish
+
+        // get overview
+        console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+        const overview = await this.tw.overview();
+        const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
+
+        const transaction = new Transaction({});
+        transaction.accountId = this._accountInfo.accountId;
+        transaction.amount = '0';
+
+        // get mapping address
+        const userAddress = await this.getMappingAddress(detailModel.struct.srcAddress);
+        transaction.to = userAddress;
+
+        // caculate amount to smallest unit
+        const bnAmount = new BigNumber(detailModel.struct.amount);
+        const amount = bnAmount.multipliedBy(srcInfo.decimals).toFixed();
+
+        // make token manager data
+        transaction.message = TokenManagerDataBuilder.encodeMintToken({
+          name: srcInfo.name,
+          symbol: srcInfo.symbol,
+          decimals: srcInfo.decimals,
+          chainId: detailModel.struct.srcChainId,
+          fromContractAddress: detailModel.struct.srcTokenAddress,
+          userAddress,
+          amount,
+          txHash: detailModel.struct.srcTxHash,
+        });
+
+        // get fee
+        const resFee = await this.tw.getTransactionFee({
+          id: srcInfo.accountId,
+          to: userAddress,
+          amount,
+          data: transaction.message,
+        });
+        transaction.feePerUnit = resFee.feePerUnit.slow;
+        transaction.feeUnit = resFee.unit;
+        transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
+
+        // send transaction mint
+        // const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+        // console.log('mint res', res);
       } else {
 
       }
+      await this.finishJob(jobListItemStruct);
     } catch (e) {
-
+      console.trace('doJob failed', e);
+      delete this.workingList[jobListItemStruct.pk];
+      setTimeout(() => {
+        this.getJob();
+      }, JOB_INTERVAL);
     }
     return true;
   }
@@ -238,11 +310,18 @@ class Worker extends Bot {
 
   /**
    *
-   * @param {string} srcChainID
+   * @param {string} srcChainId
    * @returns
    */
-  isDeposit(srcChainID) {
-    return srcChainID.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
+  isDeposit(srcChainId) {
+    console.log('srcChainId.toLowerCase()', srcChainId.toLowerCase());
+    console.log('this.config.blockchain.blockchainId.toLowerCase()', this.config.blockchain.blockchainId.toLowerCase());
+    return srcChainId.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
+  }
+
+  async getMappingAddress(blockchainId, address) {
+    // find from contract
+    return address;
   }
 }
 
