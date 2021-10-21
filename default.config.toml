@@ -10,6 +10,7 @@ debug = false
 [blockchain]
 type = "ethereum"
 blockchainId = '80001F51'
+tokenManagerAddress = ''
 
 [database]
 type = "firebase"
