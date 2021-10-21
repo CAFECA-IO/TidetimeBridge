@@ -59,6 +59,7 @@ class TokenManagerTransaction {
     // 0000000000000000000000000000000000000000000000000000000000000141
     // 0000000000000000000000005b38da6a701c568545dcfcb03fcb875f56beddc4
     // 16ba1702e725deb82db1215911be30ede0699b439a33660f68238e5f15a854bb
+
     const {
       tokenAddress, amount, userAddress, txHash,
     } = param;
@@ -68,7 +69,7 @@ class TokenManagerTransaction {
     }
 
     const normalizeTokenAddr = this.leftPad32(Utils.toHex(tokenAddress));
-    const normalizeAmount = this.leftPad32(Utils.toHex(amount));
+    const normalizeAmount = this.leftPad32(Utils.decToHex(amount, { prefix: false }));
     const normalizeUserAddress = this.leftPad32(Utils.toHex(userAddress));
     const normalizeTxHash = this.leftPad32(Utils.toHex(txHash));
 
@@ -100,7 +101,7 @@ class TokenManagerTransaction {
       throw new Error('encodeGetToken invalid input');
     }
 
-    const normalizeChainId = this.rightPad32(Utils.toHex(chainId)); // because byte4 is pad right
+    const normalizeChainId = this.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
     let normalizeAddr;
     if (Utils.isBTCLike(chainId)) {
       // ++ todo add btc address decode
@@ -144,7 +145,7 @@ class TokenManagerTransaction {
     const encodeName = this.encodeString(name);
     const encodeSymbol = this.encodeString(symbol);
 
-    const normalizeChainId = this.rightPad32(Utils.toHex(chainId)); // because byte4 is pad right
+    const normalizeChainId = this.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
     let normalizeFromAddr;
     if (Utils.isBTCLike(chainId)) {
       // ++ todo add btc address decode
@@ -154,7 +155,7 @@ class TokenManagerTransaction {
     }
 
     const normalizeUserAddress = this.leftPad32(Utils.toHex(userAddress));
-    const normalizeAmount = this.leftPad32(Utils.toHex(amount));
+    const normalizeAmount = this.leftPad32(Utils.decToHex(amount, { prefix: false }));
     const normalizeTxHash = this.leftPad32(Utils.toHex(txHash));
 
     let res = '0x';
@@ -217,7 +218,7 @@ class TokenManagerTransaction {
     let length = 32 * 2;
     let arr;
     if (typeof str === 'string') {
-      length -= (str.length % length);
+      length -= (str.length % length) ? (str.length % length) : length;
       arr = new Array(length).fill(0);
       arr.push(str);
     } else {
@@ -232,7 +233,7 @@ class TokenManagerTransaction {
     let length = 32 * 2;
     let arr = [];
     if (typeof str === 'string') {
-      length -= (str.length % length);
+      length -= (str.length % length) ? (str.length % length) : length;
       arr.push(str);
       arr = arr.concat(new Array(length).fill(0));
     } else {
