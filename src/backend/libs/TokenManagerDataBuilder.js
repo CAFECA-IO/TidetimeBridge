@@ -6,53 +6,16 @@ const CONTRACT_CODE = {
   mintToken: '6adc8e99',
 };
 
-class TokenManagerTransaction {
-  constructor(param) {
-    this._to = param.to ? param.to : '';
-    this._amount = param.amount ? param.amount : '';
-    this._feePerUnit = param.feePerUnit ? param.feePerUnit : '';
-    this._fee = param.fee ? param.fee : '';
-    this._gasUsed = param.gasUsed ? param.gasUsed : 0;
-    this._message = param.message ? param.message : '';
-    this._chainId = param.chainId ? param.chainId : 8017;
-    this._nonce = param.nonce ? param.nonce : 0;
-    return this;
-  }
-
-  // setter
-  set to(to) { this._to = to; }
-
-  set amount(amount) { this._amount = amount; }
-
-  set feePerUnit(feePerUnit) { this._feePerUnit = feePerUnit; }
-
-  set fee(fee) { this._fee = fee; }
-
-  set gasUsed(gasUsed) { this._gasUsed = gasUsed; }
-
-  set message(message) { this._message = message; }
-
-  set chainId(chainId) { this._chainId = chainId; }
-
-  set nonce(nonce) { this._nonce = nonce; }
-
-  // getter
-  get to() { return this._to; }
-
-  get amount() { return this._amount; }
-
-  get feePerUnit() { return this._feePerUnit; }
-
-  get fee() { return this._fee; }
-
-  get gasUsed() { return this._gasUsed; }
-
-  get message() { return this._message; }
-
-  get chainId() { return this._chainId; }
-
-  get nonce() { return this._nonce; }
-
+class TokenManagerDataBuilder {
+  /**
+   *
+   * @param {Object} param
+   * @param {string} param.tokenAddress
+   * @param {string} param.amount
+   * @param {string} param.userAddress
+   * @param {string} param.txHash
+   * @returns
+   */
   static encodeBurnToken(param) {
     // 0x8523c3ca
     // 00000000000000000000000080922db6752ece1c2defa54beb8fb984e649308b
@@ -118,6 +81,19 @@ class TokenManagerTransaction {
     return res;
   }
 
+  /**
+   *
+   * @param {Object} param
+   * @param {string} param.name
+   * @param {string} param.symbol
+   * @param {string} param.decimals
+   * @param {string} param.chainId
+   * @param {string} param.fromContractAddress
+   * @param {string} param.userAddress
+   * @param {string} param.amount
+   * @param {string} param.txHash,
+   * @returns
+   */
   static encodeMintToken(param) {
     // 0x6adc8e99
     // 0000000000000000000000000000000000000000000000000000000000000100
@@ -243,4 +219,4 @@ class TokenManagerTransaction {
     return result;
   }
 }
-module.exports = TokenManagerTransaction;
+module.exports = TokenManagerDataBuilder;
