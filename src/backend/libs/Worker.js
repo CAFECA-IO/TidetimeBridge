@@ -1,3 +1,4 @@
+/* eslint-disable no-fallthrough */
 const BigNumber = require('bignumber.js');
 
 const Bot = require('./Bot');
@@ -195,54 +196,14 @@ class Worker extends Bot {
         // 1. call contract mint
         // 2. finish
 
-        // get overview
-        console.log('detailModel.struct.accountId', detailModel.struct.accountId);
-        const overview = await this.tw.overview();
-        const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
-
-        const transaction = new Transaction({});
-        transaction.accountId = this._accountInfo.accountId;
-        transaction.amount = '0';
-        transaction.to = this.config.blockchain.tokenManagerAddress;
-
-        // get mapping address
-        const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
-
-        // caculate amount to smallest unit
-        const bnAmount = new BigNumber(detailModel.struct.amount);
-        const bnDecimals = (new BigNumber(10)).pow(srcInfo.decimals);
-        const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
-
-        // make token manager data
-        transaction.message = TokenManagerDataBuilder.encodeMintToken({
-          name: srcInfo.name,
-          symbol: srcInfo.symbol,
-          decimals: srcInfo.decimals,
-          chainId: detailModel.struct.srcChainId,
-          fromContractAddress: detailModel.struct.srcTokenAddress,
-          userAddress,
-          amount,
-          txHash: detailModel.struct.srcTxHash,
-        });
-
-        // get fee
-        const resFee = await this.tw.getTransactionFee({
-          id: srcInfo.accountId,
-          to: this.config.blockchain.tokenManagerAddress,
-          amount: '0',
-          data: transaction.message,
-        });
-        transaction.feePerUnit = resFee.feePerUnit.slow;
-        transaction.feeUnit = resFee.unit;
-        transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
-
-        console.log(transaction);
-        // send transaction mint
-        const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
-        console.log('!!!!mint res', res);
-        if (res) {
-          return this.finishJob(jobListItemStruct);
+        switch (detailModel.struct.step) {
+          case 1:
+            await this._depositStep1(jobListItemStruct, detailModel);
+          case 2:
+            await this.finishJob(jobListItemStruct, detailModel);
+          default:
         }
+        delete this.workingList[jobListItemStruct.pk];
       } else {
 
       }
@@ -256,7 +217,7 @@ class Worker extends Bot {
     return true;
   }
 
-  async finishJob(jobListItemStruct) {
+  async finishJob(jobListItemStruct, detailModel) {
     const oriPk = jobListItemStruct.pk;
     try {
       // 1. save ori pk
@@ -273,6 +234,9 @@ class Worker extends Bot {
 
       jobListItemModelNew.struct = jobListItemStruct;
       jobListItemModelNew.struct.finalized = true;
+      detailModel.struct.finalized = true;
+
+      await detailModel.save();
       const saveRes = await jobListItemModelNew.save();
 
       const removeRes = await ModelFactory.remove({
@@ -294,8 +258,9 @@ class Worker extends Bot {
     }
   }
 
-  async updateJob(jobListItemStruct) {
+  async updateJob(jobListItemStruct, detailModel) {
     try {
+      await detailModel.save();
       const res = await ModelFactory.update({
         database: this.database,
         struct: this.tableName,
@@ -325,6 +290,61 @@ class Worker extends Bot {
   async getMappingAddress(blockchainId, address) {
     // find from contract
     return address;
+  }
+
+  async _depositStep1(jobListItemStruct, detailModel) {
+    // get overview
+    console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+    const overview = await this.tw.overview();
+    const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
+
+    const transaction = new Transaction({});
+    transaction.accountId = this._accountInfo.accountId;
+    transaction.amount = '0';
+    transaction.to = this.config.blockchain.tokenManagerAddress;
+
+    // get mapping address
+    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+
+    // caculate amount to smallest unit
+    const bnAmount = new BigNumber(detailModel.struct.amount);
+    const bnDecimals = (new BigNumber(10)).pow(srcInfo.decimals);
+    const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
+
+    // make token manager data
+    transaction.message = TokenManagerDataBuilder.encodeMintToken({
+      name: srcInfo.name,
+      symbol: srcInfo.symbol,
+      decimals: srcInfo.decimals,
+      chainId: detailModel.struct.srcChainId,
+      fromContractAddress: detailModel.struct.srcTokenAddress,
+      userAddress,
+      amount,
+      txHash: detailModel.struct.srcTxHash,
+    });
+
+    // get fee
+    const resFee = await this.tw.getTransactionFee({
+      id: srcInfo.accountId,
+      to: this.config.blockchain.tokenManagerAddress,
+      amount: '0',
+      data: transaction.message,
+    });
+    transaction.feePerUnit = resFee.feePerUnit.slow;
+    transaction.feeUnit = resFee.unit;
+    transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
+
+    console.log(transaction);
+    // send transaction mint
+    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    if (res) {
+      jobListItemStruct.destTxHash = res;
+      jobListItemStruct.mintOrBurnTxHash = res;
+      detailModel.struct.destTxHash = res;
+      detailModel.struct.mintOrBurnTxHash = res;
+    }
+
+    await this.updateJob(jobListItemStruct, detailModel);
   }
 }
 
