@@ -196,7 +196,7 @@ class Worker extends Bot {
         // 1. call contract mint
         // 2. finish
 
-        switch (detailModel.struct.step) {
+        switch (jobListItemStruct.step) {
           case 1:
             await this._depositStep1(jobListItemStruct, detailModel);
           case 2:
@@ -260,6 +260,8 @@ class Worker extends Bot {
 
   async updateJob(jobListItemStruct, detailModel) {
     try {
+      jobListItemStruct.step += 1;
+
       await detailModel.save();
       const res = await ModelFactory.update({
         database: this.database,
