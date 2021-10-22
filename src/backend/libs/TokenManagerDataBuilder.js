@@ -119,7 +119,7 @@ class TokenManagerDataBuilder {
 
     let strLocation = 8 * 32; // 8 param * 32 byte
     const encodeName = this.encodeString(name);
-    const encodeSymbol = this.encodeString(symbol);
+    const encodeSymbol = this.encodeString(this.renameSymbol(symbol));
 
     const normalizeChainId = this.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
     let normalizeFromAddr;
@@ -217,6 +217,14 @@ class TokenManagerDataBuilder {
     }
     result = arr.join('');
     return result;
+  }
+
+  static renameSymbol(symbol) {
+    let value = symbol;
+    if (!symbol.startsWith('bt', 0)) {
+      value = `bt${symbol}`;
+    }
+    return value;
   }
 }
 module.exports = TokenManagerDataBuilder;
