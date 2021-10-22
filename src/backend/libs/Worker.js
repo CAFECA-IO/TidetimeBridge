@@ -7,7 +7,7 @@ const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
 
-const JOB_INTERVAL = 60 * 1000;
+const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
 
 class Worker extends Bot {
@@ -140,8 +140,7 @@ class Worker extends Bot {
     // 2. do job
     // 3. update job
     // 4. finish job
-    // 5. call getjob
-    // 6. if no job set timeount and call get job
+    // 5. set timeount and call get job
     try {
       const res = await ModelFactory.findPrefix({
         database: this.database,
@@ -163,11 +162,9 @@ class Worker extends Bot {
       }
 
       // set interval
-      if (Object.keys(this.workingList).length === 0) {
-        setTimeout(() => {
-          this.getJob();
-        }, JOB_INTERVAL);
-      }
+      setTimeout(() => {
+        this.getJob();
+      }, JOB_INTERVAL);
     } catch (e) {
       console.trace('getJob failed.', e);
       setTimeout(() => {
@@ -205,14 +202,20 @@ class Worker extends Bot {
         }
         delete this.workingList[jobListItemStruct.pk];
       } else {
+        // prepare: get chainId and from contract address from shadow token contract
+        // 1. transfer target asset to user
+        // 2. call contract burn
+        // 3. finish
 
+        switch (jobListItemStruct.step) {
+          case 1:
+          case 2:
+          case 3:
+        }
       }
     } catch (e) {
       console.trace('doJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
-      setTimeout(() => {
-        this.getJob();
-      }, JOB_INTERVAL);
     }
     return true;
   }
@@ -225,7 +228,6 @@ class Worker extends Bot {
       // 3. save jobListItem with newPk into db
       // 4. remove oriPk from db
       // 5. remove workingList
-      // 6. call getjob
 
       const jobListItemModelNew = await ModelFactory.create({
         database: this.database,
@@ -248,13 +250,9 @@ class Worker extends Bot {
       });
 
       delete this.workingList[oriPk];
-
-      this.getJob();
     } catch (e) {
       console.trace('finishJob failed.', e);
       delete this.workingList[oriPk];
-
-      this.getJob();
     }
   }
 
@@ -275,7 +273,6 @@ class Worker extends Bot {
     } catch (e) {
       console.trace('updateJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
-      this.getJob();
     }
   }
 
@@ -344,9 +341,8 @@ class Worker extends Bot {
       jobListItemStruct.mintOrBurnTxHash = res;
       detailModel.struct.destTxHash = res;
       detailModel.struct.mintOrBurnTxHash = res;
+      await this.updateJob(jobListItemStruct, detailModel);
     }
-
-    await this.updateJob(jobListItemStruct, detailModel);
   }
 }
 
