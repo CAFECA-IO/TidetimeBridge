@@ -1,6 +1,7 @@
 const TideWallet = require('@cafeca/tidewalletjs/src/index');
 const Bot = require('./Bot');
 const ModelFactory = require('./ModelFactory');
+const ResponseFormat = require('./ResponseFormat');
 
 class Bridge extends Bot {
   constructor() {
@@ -79,6 +80,31 @@ class Bridge extends Bot {
     } catch (error) {
       setTimeout(this.createJob(data), 1000);
     }
+  }
+
+  // temp
+  async receivedAddress() {
+    const res = await this.tw.overview();
+    const curAndAddr = [];
+    for (const cur of res.currencies) {
+      if (cur.type === 'currency') {
+        const addr = await this.tw.getReceivingAddress(cur.id);
+        if (addr) {
+          curAndAddr.push({
+            blockchainId: cur.blockchainId,
+            name: cur.name,
+            address: addr,
+          });
+        }
+      }
+    }
+
+    return new ResponseFormat({
+      message: '',
+      payload: {
+        addresses: curAndAddr,
+      },
+    });
   }
 }
 
