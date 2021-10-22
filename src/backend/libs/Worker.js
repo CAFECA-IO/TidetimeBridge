@@ -336,12 +336,15 @@ class Worker extends Bot {
     console.log(transaction);
     // send transaction mint
     const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    console.log('transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
       jobListItemStruct.mintOrBurnTxHash = res;
       detailModel.struct.destTxHash = res;
       detailModel.struct.mintOrBurnTxHash = res;
       await this.updateJob(jobListItemStruct, detailModel);
+    } else {
+      throw new Error('sendTransaction fail.');
     }
   }
 }
