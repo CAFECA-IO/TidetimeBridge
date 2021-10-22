@@ -6,9 +6,10 @@ class bridgeDetail {
    */
   constructor({
     pk = '',
-    srcChainID = '',
+    accountId = '',
+    srcChainId = '',
     srcTokenAddress = '',
-    destChainID = '',
+    destChainId = '',
     destTokenAddress = '',
     amount = '',
     srcAddress = '',
@@ -21,9 +22,10 @@ class bridgeDetail {
     triggerData = '',
   }) {
     this._pk = pk;
-    this._srcChainID = srcChainID;
+    this._accountId = accountId;
+    this._srcChainId = srcChainId;
     this._srcTokenAddress = srcTokenAddress;
-    this._destChainID = destChainID;
+    this._destChainId = destChainId;
     this._destTokenAddress = destTokenAddress;
     this._amount = amount;
     this._srcAddress = srcAddress;
@@ -39,11 +41,13 @@ class bridgeDetail {
   // setter
   set pk(pk) { this._pk = pk; }
 
-  set srcChainID(srcChainID) { this._srcChainID = srcChainID; }
+  set accountId(accountId) { this._accountId = accountId; }
+
+  set srcChainId(srcChainId) { this._srcChainId = srcChainId; }
 
   set srcTokenAddress(srcTokenAddress) { this._srcTokenAddress = srcTokenAddress; }
 
-  set destChainID(destChainID) { this._destChainID = destChainID; }
+  set destChainId(destChainId) { this._destChainId = destChainId; }
 
   set destTokenAddress(destTokenAddress) { this._destTokenAddress = destTokenAddress; }
 
@@ -66,13 +70,15 @@ class bridgeDetail {
   set triggerData(triggerData) { this._triggerData = triggerData; }
 
   // getter
-  get pk() { return this._pk ? this._pk : `${this.srcChainID}-${this.srcTxHash}`; }
+  get pk() { return this._pk ? this._pk : `${this.srcChainId}-${this.srcTxHash}`; }
 
-  get srcChainID() { return this._srcChainID; }
+  get accountId() { return this._accountId; }
+
+  get srcChainId() { return this._srcChainId; }
 
   get srcTokenAddress() { return this._srcTokenAddress; }
 
-  get destChainID() { return this._destChainID; }
+  get destChainId() { return this._destChainId; }
 
   get destTokenAddress() { return this._destTokenAddress; }
 
@@ -97,9 +103,10 @@ class bridgeDetail {
   get data() {
     return {
       pk: this.pk,
-      srcChainID: this.srcChainID,
+      accountId: this.accountId,
+      srcChainId: this.srcChainId,
       srcTokenAddress: this.srcTokenAddress,
-      destChainID: this.destChainID,
+      destChainId: this.destChainId,
       destTokenAddress: this.destTokenAddress,
       amount: this.amount,
       srcAddress: this.srcAddress,
@@ -114,7 +121,7 @@ class bridgeDetail {
   }
 
   get check() {
-    return (!!this.srcChainID && !!this.srcTxHash);
+    return (!!this.srcChainId && !!this.srcTxHash);
   }
 }
 

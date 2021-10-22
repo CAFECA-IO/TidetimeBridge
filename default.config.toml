@@ -9,7 +9,8 @@ debug = false
 
 [blockchain]
 type = "ethereum"
-blockchainId = '80001F51'
+blockchainId = 'F000003C'
+tokenManagerAddress = ''
 
 [database]
 type = "firebase"
@@ -25,5 +26,6 @@ networkPublish = false
 
 [api]
 pathname = [
-  "get | /,/version | Static.Utils.readPackageInfo"
+  "get | /,/version | Static.Utils.readPackageInfo",
+  "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress"
 ]
