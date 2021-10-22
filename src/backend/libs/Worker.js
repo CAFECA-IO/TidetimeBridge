@@ -6,7 +6,7 @@ const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
 
-const JOB_INTERVAL = 1000;
+const JOB_INTERVAL = 60 * 1000;
 const MAX_WORKER = 10;
 
 class Worker extends Bot {
@@ -203,14 +203,15 @@ class Worker extends Bot {
         const transaction = new Transaction({});
         transaction.accountId = this._accountInfo.accountId;
         transaction.amount = '0';
+        transaction.to = this.config.blockchain.tokenManagerAddress;
 
         // get mapping address
-        const userAddress = await this.getMappingAddress(detailModel.struct.srcAddress);
-        transaction.to = userAddress;
+        const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
 
         // caculate amount to smallest unit
         const bnAmount = new BigNumber(detailModel.struct.amount);
-        const amount = bnAmount.multipliedBy(srcInfo.decimals).toFixed();
+        const bnDecimals = (new BigNumber(10)).pow(srcInfo.decimals);
+        const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
 
         // make token manager data
         transaction.message = TokenManagerDataBuilder.encodeMintToken({
@@ -227,21 +228,24 @@ class Worker extends Bot {
         // get fee
         const resFee = await this.tw.getTransactionFee({
           id: srcInfo.accountId,
-          to: userAddress,
-          amount,
+          to: this.config.blockchain.tokenManagerAddress,
+          amount: '0',
           data: transaction.message,
         });
         transaction.feePerUnit = resFee.feePerUnit.slow;
         transaction.feeUnit = resFee.unit;
         transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
 
+        console.log(transaction);
         // send transaction mint
-        // const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
-        // console.log('mint res', res);
+        const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+        console.log('!!!!mint res', res);
+        if (res) {
+          return this.finishJob(jobListItemStruct);
+        }
       } else {
 
       }
-      await this.finishJob(jobListItemStruct);
     } catch (e) {
       console.trace('doJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
@@ -314,9 +318,8 @@ class Worker extends Bot {
    * @returns
    */
   isDeposit(srcChainId) {
-    console.log('srcChainId.toLowerCase()', srcChainId.toLowerCase());
-    console.log('this.config.blockchain.blockchainId.toLowerCase()', this.config.blockchain.blockchainId.toLowerCase());
     return srcChainId.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
+    // return true;
   }
 
   async getMappingAddress(blockchainId, address) {
