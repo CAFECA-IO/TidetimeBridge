@@ -6,6 +6,7 @@ const ModelFactory = require('./ModelFactory');
 const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
+const JsonRpc = require('./JsonRpc');
 
 const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
@@ -208,6 +209,11 @@ class Worker extends Bot {
         // 2. call contract burn
         // 3. finish
 
+        const jsonrpc = new JsonRpc(this._baseChain);
+        const targetAsset = {
+          chainId: await jsonrpc.getShadowTokenChainId(detailModel.struct.srcTokenAddress),
+          contractAddress: await jsonrpc.getShadowTokenFromContractAddress(detailModel.struct.srcTokenAddress),
+        };
         switch (jobListItemStruct.step) {
           case 1:
           case 2:
