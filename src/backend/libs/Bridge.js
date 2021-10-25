@@ -17,13 +17,13 @@ class Bridge extends Bot {
     })
       .then(() => {
         this.tw = new TideWallet();
-        this.tw.on('ready', () => { console.log('TideWallet is Ready'); });
+        // this.tw.on('ready', () => { this.logger.debug('TideWallet is Ready'); });
         this.tw.on('notice', (data) => {
-          console.log('TideWallet get Notice');
-          console.log(data);
+          this.logger.debug('TideWallet get Notice');
+          this.logger.debug(data);
           if (data.value.tx.direction === 'receive') { this.createJob(data); }
         });
-        this.tw.on('update', () => { console.log('TideWallet Data Updated'); });
+        // this.tw.on('update', () => { this.logger.debug('TideWallet Data Updated'); });
 
         const api = {
           apiURL: this.config.tidewalletjs.apiURL,

@@ -6,6 +6,8 @@ const ModelFactory = require('./ModelFactory');
 const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
+const JsonRpc = require('./JsonRpc');
+const Utils = require('./Utils');
 
 const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
@@ -25,6 +27,7 @@ class Worker extends Bot {
     })
       .then(() => {
         this.workingList = {};
+        this._baseChain = this.config.blockchain.base;
       })
       .then(() => this);
   }
@@ -35,7 +38,7 @@ class Worker extends Bot {
         const br = await this.getBot('Bridge');
         this.tw = br.tw;
         const overview = await this.tw.overview();
-        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this.config.blockchain.blockchainId
+        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this._baseChain.blockchainId
             && info.type === 'currency'));
       })
       .then(() => {
@@ -176,7 +179,7 @@ class Worker extends Bot {
   }
 
   async doJob(jobListItemStruct) {
-    console.log('doJob', jobListItemStruct);
+    this.logger.debug('doJob', jobListItemStruct);
     try {
       // get bridgeDetail
       const detailModel = await ModelFactory.find({
@@ -186,8 +189,7 @@ class Worker extends Bot {
           key: jobListItemStruct.bridgeDetailKey,
         },
       });
-      console.log('detailModel', detailModel.struct);
-      console.log('is deposit', this.isDeposit(jobListItemStruct.srcChainId));
+      this.logger.debug('detailModel', detailModel.struct);
 
       if (this.isDeposit(jobListItemStruct.srcChainId)) {
         // 1. call contract mint
@@ -207,10 +209,17 @@ class Worker extends Bot {
         // 2. call contract burn
         // 3. finish
 
+        const jsonrpc = new JsonRpc(this._baseChain);
+        const targetAsset = {
+          chainId: await jsonrpc.getShadowTokenChainId(detailModel.struct.srcTokenAddress),
+          contractAddress: await jsonrpc.getShadowTokenFromContractAddress(detailModel.struct.srcTokenAddress),
+        };
         switch (jobListItemStruct.step) {
           case 1:
+            this._withdrawStep1(jobListItemStruct, detailModel, targetAsset);
           case 2:
           case 3:
+          default:
         }
       }
     } catch (e) {
@@ -269,7 +278,7 @@ class Worker extends Bot {
         },
         data: jobListItemStruct.data,
       });
-      console.log(res);
+      this.logger.debug(res);
     } catch (e) {
       console.trace('updateJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
@@ -282,7 +291,7 @@ class Worker extends Bot {
    * @returns
    */
   isDeposit(srcChainId) {
-    return srcChainId.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
+    return srcChainId.toLowerCase() !== this._baseChain.blockchainId.toLowerCase();
     // return true;
   }
 
@@ -293,14 +302,14 @@ class Worker extends Bot {
 
   async _depositStep1(jobListItemStruct, detailModel) {
     // get overview
-    console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
     const overview = await this.tw.overview();
     const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
 
     const transaction = new Transaction({});
     transaction.accountId = this._accountInfo.accountId;
     transaction.amount = '0';
-    transaction.to = this.config.blockchain.tokenManagerAddress;
+    transaction.to = this._baseChain.tokenManagerAddress;
 
     // get mapping address
     const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
@@ -324,24 +333,68 @@ class Worker extends Bot {
 
     // get fee
     const resFee = await this.tw.getTransactionFee({
-      id: srcInfo.accountId,
-      to: this.config.blockchain.tokenManagerAddress,
+      id: this._accountInfo.accountId,
+      to: this._baseChain.tokenManagerAddress,
       amount: '0',
       data: transaction.message,
     });
-    transaction.feePerUnit = resFee.feePerUnit.slow;
+    transaction.feePerUnit = resFee.feePerUnit.standard;
     transaction.feeUnit = resFee.unit;
-    transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
+    transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
-    console.log(transaction);
+    this.logger.debug('_depositStep1 transaction', transaction);
     // send transaction mint
     const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
-    console.log('transaction res', res);
+    this.logger.debug('_depositStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
       jobListItemStruct.mintOrBurnTxHash = res;
       detailModel.struct.destTxHash = res;
       detailModel.struct.mintOrBurnTxHash = res;
+      await this.updateJob(jobListItemStruct, detailModel);
+    } else {
+      throw new Error('sendTransaction fail.');
+    }
+  }
+
+  async _withdrawStep1(jobListItemStruct, detailModel, targetAsset) {
+    // get overview
+    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
+    const overview = await this.tw.overview();
+    const targetInfo = overview.currencies.find((info) => {
+      const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
+      return (targetAsset.chainId === info.blockchainId) && (targetAsset.contractAddress === contractAddr);
+    });
+
+    const transaction = new Transaction({});
+    transaction.accountId = targetInfo.accountId;
+    transaction.amount = detailModel.amount;
+
+    // get mapping address
+    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+    transaction.to = userAddress;
+
+    // get fee
+    const resFee = await this.tw.getTransactionFee({
+      id: targetInfo.accountId,
+      to: userAddress,
+      amount: transaction.amount,
+      data: '0x',
+    });
+    transaction.feePerUnit = resFee.feePerUnit.standard;
+    transaction.feeUnit = resFee.unit;
+    transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
+
+    this.logger.debug('_withdrawStep1 transaction', transaction);
+    // send transaction mint
+    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    this.logger.debug('_withdrawStep1 transaction res', res);
+    if (res) {
+      jobListItemStruct.destTxHash = res;
+
+      detailModel.struct.destChainId = targetInfo.blockchainId;
+      detailModel.struct.destTxHash = res;
+      detailModel.struct.destTokenAddress = targetInfo.type === 'token' ? targetInfo.contract : '0x0000000000000000000000000000000000000000';
       await this.updateJob(jobListItemStruct, detailModel);
     } else {
       throw new Error('sendTransaction fail.');
