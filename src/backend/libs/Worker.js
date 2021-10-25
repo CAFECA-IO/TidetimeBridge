@@ -179,7 +179,7 @@ class Worker extends Bot {
   }
 
   async doJob(jobListItemStruct) {
-    console.log('doJob', jobListItemStruct);
+    this.logger.debug('doJob', jobListItemStruct);
     try {
       // get bridgeDetail
       const detailModel = await ModelFactory.find({
@@ -189,8 +189,7 @@ class Worker extends Bot {
           key: jobListItemStruct.bridgeDetailKey,
         },
       });
-      console.log('detailModel', detailModel.struct);
-      console.log('is deposit', this.isDeposit(jobListItemStruct.srcChainId));
+      this.logger.debug('detailModel', detailModel.struct);
 
       if (this.isDeposit(jobListItemStruct.srcChainId)) {
         // 1. call contract mint
@@ -279,7 +278,7 @@ class Worker extends Bot {
         },
         data: jobListItemStruct.data,
       });
-      console.log(res);
+      this.logger.debug(res);
     } catch (e) {
       console.trace('updateJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
@@ -303,7 +302,7 @@ class Worker extends Bot {
 
   async _depositStep1(jobListItemStruct, detailModel) {
     // get overview
-    console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
     const overview = await this.tw.overview();
     const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
 
@@ -343,10 +342,10 @@ class Worker extends Bot {
     transaction.feeUnit = resFee.unit;
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
-    console.log(transaction);
+    this.logger.debug('_depositStep1 transaction', transaction);
     // send transaction mint
     const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
-    console.log('transaction res', res);
+    this.logger.debug('_depositStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
       jobListItemStruct.mintOrBurnTxHash = res;
@@ -360,7 +359,7 @@ class Worker extends Bot {
 
   async _withdrawStep1(jobListItemStruct, detailModel, targetAsset) {
     // get overview
-    console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
     const overview = await this.tw.overview();
     const targetInfo = overview.currencies.find((info) => {
       const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
@@ -386,10 +385,10 @@ class Worker extends Bot {
     transaction.feeUnit = resFee.unit;
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
-    console.log(transaction);
+    this.logger.debug('_withdrawStep1 transaction', transaction);
     // send transaction mint
     const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
-    console.log('transaction res', res);
+    this.logger.debug('_withdrawStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
 
