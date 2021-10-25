@@ -324,14 +324,14 @@ class Worker extends Bot {
 
     // get fee
     const resFee = await this.tw.getTransactionFee({
-      id: srcInfo.accountId,
+      id: this._accountInfo.accountId,
       to: this.config.blockchain.tokenManagerAddress,
       amount: '0',
       data: transaction.message,
     });
-    transaction.feePerUnit = resFee.feePerUnit.slow;
+    transaction.feePerUnit = resFee.feePerUnit.standard;
     transaction.feeUnit = resFee.unit;
-    transaction.fee = (new BigNumber(resFee.feePerUnit.slow)).multipliedBy(resFee.unit).toFixed();
+    transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
     console.log(transaction);
     // send transaction mint
