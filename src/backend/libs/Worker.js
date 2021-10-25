@@ -25,6 +25,7 @@ class Worker extends Bot {
     })
       .then(() => {
         this.workingList = {};
+        this._baseChain = this.config.blockchain.base;
       })
       .then(() => this);
   }
@@ -35,7 +36,7 @@ class Worker extends Bot {
         const br = await this.getBot('Bridge');
         this.tw = br.tw;
         const overview = await this.tw.overview();
-        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this.config.blockchain.blockchainId
+        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this._baseChain.blockchainId
             && info.type === 'currency'));
       })
       .then(() => {
@@ -282,7 +283,7 @@ class Worker extends Bot {
    * @returns
    */
   isDeposit(srcChainId) {
-    return srcChainId.toLowerCase() !== this.config.blockchain.blockchainId.toLowerCase();
+    return srcChainId.toLowerCase() !== this._baseChain.blockchainId.toLowerCase();
     // return true;
   }
 
@@ -300,7 +301,7 @@ class Worker extends Bot {
     const transaction = new Transaction({});
     transaction.accountId = this._accountInfo.accountId;
     transaction.amount = '0';
-    transaction.to = this.config.blockchain.tokenManagerAddress;
+    transaction.to = this._baseChain.tokenManagerAddress;
 
     // get mapping address
     const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
@@ -325,7 +326,7 @@ class Worker extends Bot {
     // get fee
     const resFee = await this.tw.getTransactionFee({
       id: this._accountInfo.accountId,
-      to: this.config.blockchain.tokenManagerAddress,
+      to: this._baseChain.tokenManagerAddress,
       amount: '0',
       data: transaction.message,
     });

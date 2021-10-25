@@ -221,8 +221,8 @@ class TokenManagerDataBuilder {
 
   static renameSymbol(symbol) {
     let value = symbol;
-    if (!symbol.startsWith('bt', 0)) {
-      value = `bt${symbol}`;
+    if (!symbol.startsWith('tt', 0)) {
+      value = `tt${symbol}`;
     }
     return value;
   }
