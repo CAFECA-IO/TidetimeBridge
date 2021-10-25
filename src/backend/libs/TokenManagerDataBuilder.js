@@ -31,10 +31,10 @@ class TokenManagerDataBuilder {
       throw new Error('encodeBurnToken invalid input');
     }
 
-    const normalizeTokenAddr = this.leftPad32(Utils.toHex(tokenAddress));
-    const normalizeAmount = this.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeUserAddress = this.leftPad32(Utils.toHex(userAddress));
-    const normalizeTxHash = this.leftPad32(Utils.toHex(txHash));
+    const normalizeTokenAddr = Utils.leftPad32(Utils.toHex(tokenAddress));
+    const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
+    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
+    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
 
     let res = '0x';
     res += CONTRACT_CODE.burnToken;
@@ -64,13 +64,13 @@ class TokenManagerDataBuilder {
       throw new Error('encodeGetToken invalid input');
     }
 
-    const normalizeChainId = this.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
+    const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
     let normalizeAddr;
     if (Utils.isBTCLike(chainId)) {
       // ++ todo add btc address decode
     }
     if (Utils.isETHLike(chainId)) {
-      normalizeAddr = this.leftPad32(Utils.toHex(fromContractAddress));
+      normalizeAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
     }
 
     let res = '0x';
@@ -121,35 +121,35 @@ class TokenManagerDataBuilder {
     const encodeName = this.encodeString(name);
     const encodeSymbol = this.encodeString(this.renameSymbol(symbol));
 
-    const normalizeChainId = this.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
+    const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
     let normalizeFromAddr;
     if (Utils.isBTCLike(chainId)) {
       // ++ todo add btc address decode
     }
     if (Utils.isETHLike(chainId)) {
-      normalizeFromAddr = this.leftPad32(Utils.toHex(fromContractAddress));
+      normalizeFromAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
     }
 
-    const normalizeUserAddress = this.leftPad32(Utils.toHex(userAddress));
-    const normalizeAmount = this.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeTxHash = this.leftPad32(Utils.toHex(txHash));
+    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
+    const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
+    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
 
     let res = '0x';
     const encodeStrArr = [];
     res += CONTRACT_CODE.mintToken;
 
     // name
-    res += this.leftPad32(Utils.toHex(strLocation));
+    res += Utils.leftPad32(Utils.toHex(strLocation));
     encodeStrArr.push(encodeName.data);
     strLocation += encodeName.length;
 
     // symbol
-    res += this.leftPad32(Utils.toHex(strLocation));
+    res += Utils.leftPad32(Utils.toHex(strLocation));
     encodeStrArr.push(encodeSymbol.data);
     strLocation += encodeSymbol.length;
 
     // decimals
-    res += this.leftPad32(Utils.toHex(decimals));
+    res += Utils.leftPad32(Utils.toHex(decimals));
 
     // chainId
     res += normalizeChainId;
@@ -176,47 +176,17 @@ class TokenManagerDataBuilder {
     const bufBaseStr = Buffer.from(string);
     const hexLenStr = Utils.toHex(bufBaseStr.length);
     // pad start
-    const bufHexLenStr = Buffer.from(this.leftPad32(hexLenStr), 'hex');
+    const bufHexLenStr = Buffer.from(Utils.leftPad32(hexLenStr), 'hex');
 
     // pad end
     const encodeStr = bufBaseStr.toString('hex');
-    const bufStr = Buffer.from(this.rightPad32(encodeStr), 'hex');
+    const bufStr = Buffer.from(Utils.rightPad32(encodeStr), 'hex');
 
     const res = Buffer.concat([bufHexLenStr, bufStr]);
     return {
       length: res.length,
       data: res.toString('hex'),
     };
-  }
-
-  static leftPad32(str) {
-    let result = '';
-    let length = 32 * 2;
-    let arr;
-    if (typeof str === 'string') {
-      length -= (str.length % length) ? (str.length % length) : length;
-      arr = new Array(length).fill(0);
-      arr.push(str);
-    } else {
-      arr = new Array(length).fill(0);
-    }
-    result = arr.join('');
-    return result;
-  }
-
-  static rightPad32(str) {
-    let result = '';
-    let length = 32 * 2;
-    let arr = [];
-    if (typeof str === 'string') {
-      length -= (str.length % length) ? (str.length % length) : length;
-      arr.push(str);
-      arr = arr.concat(new Array(length).fill(0));
-    } else {
-      arr = new Array(length).fill(0);
-    }
-    result = arr.join('');
-    return result;
   }
 
   static renameSymbol(symbol) {

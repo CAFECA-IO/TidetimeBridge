@@ -769,6 +769,36 @@ class Utils {
     hexStr = hexStr.toLowerCase();
     return this.convertBase(hexStr, 16, 10);
   }
+
+  static leftPad32(str) {
+    let result = '';
+    let length = 32 * 2;
+    let arr;
+    if (typeof str === 'string') {
+      length -= (str.length % length) ? (str.length % length) : length;
+      arr = new Array(length).fill(0);
+      arr.push(str);
+    } else {
+      arr = new Array(length).fill(0);
+    }
+    result = arr.join('');
+    return result;
+  }
+
+  static rightPad32(str) {
+    let result = '';
+    let length = 32 * 2;
+    let arr = [];
+    if (typeof str === 'string') {
+      length -= (str.length % length) ? (str.length % length) : length;
+      arr.push(str);
+      arr = arr.concat(new Array(length).fill(0));
+    } else {
+      arr = new Array(length).fill(0);
+    }
+    result = arr.join('');
+    return result;
+  }
 }
 
 module.exports = Utils;
