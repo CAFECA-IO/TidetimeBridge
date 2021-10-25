@@ -18,7 +18,8 @@ class JsonRpc {
         throw new Error('getShadowTokenChainId fail: checkId not the same');
       }
       if (data.result) {
-        return data.result;
+        const chainId = data.result.replace('0x', '').slice(0, 8); // byte4
+        return chainId;
       }
     }
 

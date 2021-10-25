@@ -7,6 +7,7 @@ const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
 const JsonRpc = require('./JsonRpc');
+const Utils = require('./Utils');
 
 const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
@@ -216,8 +217,10 @@ class Worker extends Bot {
         };
         switch (jobListItemStruct.step) {
           case 1:
+            this._withdrawStep1(jobListItemStruct, detailModel, targetAsset);
           case 2:
           case 3:
+          default:
         }
       }
     } catch (e) {
@@ -349,6 +352,50 @@ class Worker extends Bot {
       jobListItemStruct.mintOrBurnTxHash = res;
       detailModel.struct.destTxHash = res;
       detailModel.struct.mintOrBurnTxHash = res;
+      await this.updateJob(jobListItemStruct, detailModel);
+    } else {
+      throw new Error('sendTransaction fail.');
+    }
+  }
+
+  async _withdrawStep1(jobListItemStruct, detailModel, targetAsset) {
+    // get overview
+    console.log('detailModel.struct.accountId', detailModel.struct.accountId);
+    const overview = await this.tw.overview();
+    const targetInfo = overview.currencies.find((info) => {
+      const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
+      return (targetAsset.chainId === info.blockchainId) && (targetAsset.contractAddress === contractAddr);
+    });
+
+    const transaction = new Transaction({});
+    transaction.accountId = targetInfo.accountId;
+    transaction.amount = detailModel.amount;
+
+    // get mapping address
+    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+    transaction.to = userAddress;
+
+    // get fee
+    const resFee = await this.tw.getTransactionFee({
+      id: targetInfo.accountId,
+      to: userAddress,
+      amount: transaction.amount,
+      data: '0x',
+    });
+    transaction.feePerUnit = resFee.feePerUnit.standard;
+    transaction.feeUnit = resFee.unit;
+    transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
+
+    console.log(transaction);
+    // send transaction mint
+    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    console.log('transaction res', res);
+    if (res) {
+      jobListItemStruct.destTxHash = res;
+
+      detailModel.struct.destChainId = targetInfo.blockchainId;
+      detailModel.struct.destTxHash = res;
+      detailModel.struct.destTokenAddress = targetInfo.type === 'token' ? targetInfo.contract : '0x0000000000000000000000000000000000000000';
       await this.updateJob(jobListItemStruct, detailModel);
     } else {
       throw new Error('sendTransaction fail.');
