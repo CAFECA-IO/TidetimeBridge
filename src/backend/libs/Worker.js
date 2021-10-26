@@ -472,6 +472,7 @@ class Worker extends Bot {
 
     if (Utils.isETHLike(targetInfo.blockchainId)) {
       const receipt = res;
+      let success = true;
       if (!receipt) {
         const pendingTxs = await jsonrpc.getTx(jobListItemStruct.destTxHash);
         console.log('pendingTxs', pendingTxs);
@@ -479,15 +480,29 @@ class Worker extends Bot {
           await Utils.sleep(5000);
           throw new Error('receipt not found');
         } else {
-          // ++ retry step1 or set job into error pool
+          // ++ retry step1
+          success = false;
+
+          jobListItemStruct.step = 1;
+          jobListItemStruct.destTxHash = '';
+
+          detailModel.struct.step = 1;
+          detailModel.struct.destTxHash = '';
+          await this.updateJob(jobListItemStruct, detailModel, success);
           throw new Error('transaction has been thrown');
         }
       }
       if (receipt.status !== '0x1') {
-        // fail
-        // ++ retry step1 or set job into error pool
+        // fail, retry step1
+        success = false;
+
+        jobListItemStruct.step = 1;
+        jobListItemStruct.destTxHash = '';
+
+        detailModel.struct.step = 1;
+        detailModel.struct.destTxHash = '';
       }
-      await this.updateJob(jobListItemStruct, detailModel, true);
+      await this.updateJob(jobListItemStruct, detailModel, success);
     }
   }
 
