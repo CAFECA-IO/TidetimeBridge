@@ -451,7 +451,7 @@ class Worker extends Bot {
 
     this.logger.debug('_withdrawStep1 transaction', transaction);
     // send transaction mint
-    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    const res = await this.tw.sendTransaction(targetInfo.accountId, transaction);
     this.logger.debug('_withdrawStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
