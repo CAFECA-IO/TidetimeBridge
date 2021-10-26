@@ -7,6 +7,7 @@ const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
 const JsonRpc = require('./JsonRpc');
+const SupportChain = require('./SupportChain');
 const Utils = require('./Utils');
 
 const JOB_INTERVAL = 1000;
@@ -136,6 +137,34 @@ class Worker extends Bot {
     //   });
     //   console.log('findPrefix3 res:', findPrefix3);
     // });
+
+    // // resend nonce to cancel
+    //   .then(async () => {
+    //     const tx = {};
+    //     // tx.accountId = 'eb5e61d0-6396-4c4f-a8b5-49a85b508fc3';
+    //     tx.accountId = '87ceb934-fb50-4db8-8e50-4a225dab6f3f';
+
+    //     tx.amount = '0';
+    //     // tx.to = '0x4827a06af81060bfa9353a065b25ce0598fce833';
+    //     tx.to = '0xa4a6f7090962f65a3dbf5f66dd2ee4184b7c7da7';
+    //     tx.nonce = 3;
+
+    //     // get fee
+    //     const resFee = await this.tw.getTransactionFee({
+    //       id: tx.accountId,
+    //       to: tx.to,
+    //       amount: '0',
+    //       data: '0x',
+    //     });
+    //     tx.feePerUnit = resFee.feePerUnit.standard;
+    //     tx.feeUnit = resFee.unit;
+    //     tx.fee = (new BigNumber(tx.feePerUnit)).multipliedBy(tx.feeUnit).toFixed();
+
+    //     console.log('_depositStep1 transaction', tx);
+    //     // send transaction mint
+    //     const res = await this.tw.sendTransaction(this._accountInfo.accountId, tx);
+    //     console.log('_depositStep1 transaction res', res);
+    //   });
   }
 
   async getJob() {
@@ -206,18 +235,37 @@ class Worker extends Bot {
       } else {
         // prepare: get chainId and from contract address from shadow token contract
         // 1. transfer target asset to user
-        // 2. call contract burn
-        // 3. finish
+        // 2. check transfer success
+        // 3. call contract burn
+        // 4. finish
 
-        const jsonrpc = new JsonRpc(this._baseChain);
-        const targetAsset = {
-          chainId: await jsonrpc.getShadowTokenChainId(detailModel.struct.srcTokenAddress),
-          contractAddress: await jsonrpc.getShadowTokenFromContractAddress(detailModel.struct.srcTokenAddress),
-        };
+        const targetAsset = await this.getTargetAssetInfoFromToken(detailModel);
+        if (targetAsset.notExist) {
+          // not shadow token
+          this.logger.error(`${detailModel.struct.srcTokenAddress} is not shadow asset.`);
+          const removeRes = await ModelFactory.remove({
+            database: this.database,
+            struct: this.tableName,
+            condition: {
+              key: jobListItemStruct.pk,
+            },
+          });
+          delete this.workingList[jobListItemStruct.pk];
+          return true;
+        }
+
+        // get overview
+        const overview = await this.tw.overview();
+        const targetInfo = overview.currencies.find((info) => {
+          const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
+          return (targetAsset.chainId === info.blockchainId) && (targetAsset.contractAddress === contractAddr);
+        });
+
         switch (jobListItemStruct.step) {
           case 1:
-            this._withdrawStep1(jobListItemStruct, detailModel, targetAsset);
+            this._withdrawStep1(jobListItemStruct, detailModel, targetInfo);
           case 2:
+            this._withdrawStep2(jobListItemStruct, detailModel, targetInfo);
           case 3:
           default:
         }
@@ -265,9 +313,11 @@ class Worker extends Bot {
     }
   }
 
-  async updateJob(jobListItemStruct, detailModel) {
+  async updateJob(jobListItemStruct, detailModel, success) {
     try {
-      jobListItemStruct.step += 1;
+      if (success) {
+        jobListItemStruct.step += 1;
+      }
 
       await detailModel.save();
       const res = await ModelFactory.update({
@@ -298,6 +348,18 @@ class Worker extends Bot {
   async getMappingAddress(blockchainId, address) {
     // find from contract
     return address;
+  }
+
+  async getTargetAssetInfoFromToken(detailModel) {
+    const jsonrpc = new JsonRpc(this._baseChain);
+    const targetAsset = {
+      chainId: await jsonrpc.getShadowTokenChainId(detailModel.struct.srcTokenAddress),
+      contractAddress: await jsonrpc.getShadowTokenFromContractAddress(detailModel.struct.srcTokenAddress),
+    };
+    if (targetAsset.chainId === '0x' && targetAsset.contractAddress === '0x') {
+      targetAsset.notExist = true;
+    }
+    return targetAsset;
   }
 
   async _depositStep1(jobListItemStruct, detailModel) {
@@ -351,21 +413,14 @@ class Worker extends Bot {
       jobListItemStruct.mintOrBurnTxHash = res;
       detailModel.struct.destTxHash = res;
       detailModel.struct.mintOrBurnTxHash = res;
-      await this.updateJob(jobListItemStruct, detailModel);
+      await this.updateJob(jobListItemStruct, detailModel, true);
     } else {
       throw new Error('sendTransaction fail.');
     }
   }
 
-  async _withdrawStep1(jobListItemStruct, detailModel, targetAsset) {
-    // get overview
+  async _withdrawStep1(jobListItemStruct, detailModel, targetInfo) {
     this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
-    const overview = await this.tw.overview();
-    const targetInfo = overview.currencies.find((info) => {
-      const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
-      return (targetAsset.chainId === info.blockchainId) && (targetAsset.contractAddress === contractAddr);
-    });
-
     const transaction = new Transaction({});
     transaction.accountId = targetInfo.accountId;
     transaction.amount = detailModel.amount;
@@ -395,9 +450,34 @@ class Worker extends Bot {
       detailModel.struct.destChainId = targetInfo.blockchainId;
       detailModel.struct.destTxHash = res;
       detailModel.struct.destTokenAddress = targetInfo.type === 'token' ? targetInfo.contract : '0x0000000000000000000000000000000000000000';
-      await this.updateJob(jobListItemStruct, detailModel);
+      await this.updateJob(jobListItemStruct, detailModel, true);
     } else {
       throw new Error('sendTransaction fail.');
+    }
+  }
+
+  async _withdrawStep2(jobListItemStruct, detailModel, targetInfo) {
+    const jsonrpc = new JsonRpc(this.config.blockchain[SupportChain[targetInfo.blockchainId]]);
+
+    const res = await jsonrpc.getTargetTxResult(jobListItemStruct.destTxHash);
+
+    if (Utils.isETHLike(targetInfo.blockchainId)) {
+      const receipt = res;
+      if (!receipt) {
+        const pendingTxs = jsonrpc.getPendingTxs();
+        if (pendingTxs.includes(jobListItemStruct.destTxHash)) {
+          await Utils.sleep(5000);
+          throw new Error('receipt not found');
+        } else {
+          // ++ retry step1 or set job into error pool
+          throw new Error('transaction has been thrown');
+        }
+      }
+      if (receipt.status !== '0x1') {
+        // fail
+        // ++ retry step1 or set job into error pool
+      }
+      await this.updateJob(jobListItemStruct, detailModel, true);
     }
   }
 }

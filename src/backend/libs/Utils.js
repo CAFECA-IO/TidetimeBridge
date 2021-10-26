@@ -13,6 +13,8 @@ const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
 
+const SupportChain = require('./SupportChain');
+
 class Utils {
   static waterfallPromise(jobs) {
     return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
@@ -175,6 +177,64 @@ class Utils {
     }
 
     return result;
+  }
+
+  static BTCRPC({
+    protocol,
+    port,
+    hostname,
+    // eslint-disable-next-line no-shadow
+    path,
+    data,
+    user,
+    password,
+  }) {
+    const basicAuth = this.base64Encode(`${user}:${password}`);
+    const opt = {
+      protocol,
+      port,
+      hostname,
+      path,
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      data,
+      timeout: 30000,
+    };
+    const start = new Date();
+    return ecRequest
+      .post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`,
+          );
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${
+              data.method
+            }), rs.data.toString(): ${rs.data.toString()}`,
+          );
+          return false;
+        }
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
+        throw e;
+      });
   }
 
   static ETHRPC({
@@ -643,8 +703,8 @@ class Utils {
 
   static isBTCLike(chainId) {
     switch (chainId) {
-      case '80000000':
-      case 'F0000000':
+      case SupportChain.bitcoin_mainnet:
+      case SupportChain.bitcoin_testnet:
         return true;
       default:
         return false;
@@ -653,9 +713,9 @@ class Utils {
 
   static isETHLike(chainId) {
     switch (chainId) {
-      case '8000003C':
-      case 'F000003C':
-      case '80001F51':
+      case SupportChain.ethereum_mainnet:
+      case SupportChain.ethereum_ropsten:
+      case SupportChain.tidetime:
         return true;
       default:
         return false;
@@ -798,6 +858,12 @@ class Utils {
     }
     result = arr.join('');
     return result;
+  }
+
+  static sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 }
 

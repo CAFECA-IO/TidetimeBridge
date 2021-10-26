@@ -1,5 +1,6 @@
 const dvalue = require('dvalue');
 const Utils = require('./Utils');
+const SupportChain = require('./SupportChain');
 
 class JsonRpc {
   constructor(blockChainConfig) {
@@ -45,6 +46,82 @@ class JsonRpc {
     throw new Error('getShadowTokenFromContractAddress fail:', data);
   }
 
+  async getTargetTxResult(txid) {
+    if (Utils.isETHLike(this._baseChain.blockchainId)) {
+      return this._getEthReceipt(txid);
+    }
+    if (Utils.isBTCLike(this._baseChain.blockchainId)) {
+      return this._getBtcTxResult(txid);
+    }
+
+    throw new Error('not support block chain');
+  }
+
+  async _getEthReceipt(txid) {
+    const type = 'getReceipt';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getEthReceipt fail: checkId not the same');
+      }
+      if (data.result) {
+        return data.result;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error('_getEthReceipt fail:', data);
+  }
+
+  async _getBtcTxResult(txid) {
+    const type = 'getBtcTx';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getBtcTxResult fail: checkId not the same');
+      }
+      if (data.result) {
+        return data.result;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error('_getBtcTxResult fail:', data);
+  }
+
+  async getPendingTxs() {
+    if (Utils.isETHLike(this._baseChain.blockchainId)) {
+      return this._getEthPendingTxs();
+    }
+    if (Utils.isBTCLike(this._baseChain.blockchainId)) {
+      return this._getBtcPendingTxs();
+    }
+
+    throw new Error('not support block chain');
+  }
+
+  async _getEthPendingTxs() {
+    const type = 'getEthPendingTx';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getEthPendingTx fail: checkId not the same');
+      }
+      if (data.result) {
+        return data.result.transactions;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error('_getEthPendingTx fail:', data);
+  }
+
   cmd({
     type, address, command, txid,
   }) {
@@ -66,6 +143,28 @@ class JsonRpc {
           jsonrpc: '2.0',
           method: 'eth_getTransactionReceipt',
           params: [txid],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getBtcTx':
+        result = {
+          jsonrpc: '1.0',
+          id: dvalue.randomID(),
+          method: 'getrawtransaction',
+          params: [
+            txid,
+            true,
+          ],
+        };
+        break;
+      case 'getEthPendingTx':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getBlockByNumber',
+          params: [
+            'pending',
+            false,
+          ],
           id: dvalue.randomID(),
         };
         break;
