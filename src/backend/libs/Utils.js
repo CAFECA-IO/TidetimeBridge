@@ -16,6 +16,13 @@ const ecRequest = require('ecrequest');
 const SupportChain = require('./SupportChain');
 
 class Utils {
+  constructor() {
+    // assign by readConfig
+    this.config = {};
+    this.logger = {};
+    this.database = {};
+  }
+
   static waterfallPromise(jobs) {
     return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
   }
@@ -177,6 +184,11 @@ class Utils {
     }
 
     return result;
+  }
+
+  static base64Encode(string) {
+    const buf = Buffer.from(string);
+    return buf.toString('base64');
   }
 
   static BTCRPC({
@@ -592,6 +604,9 @@ class Utils {
     config, database, logger, i18n: botsI18n,
   }) {
     const interfaceFN = 'Bot.js';
+    this.config = config;
+    this.database = database;
+    this.logger = logger;
     return this.scanFolder({ folder: __dirname })
       .then((list) => list.filter((v) => path.parse(v).name !== path.parse(interfaceFN).name))
       .then((list) => list.map((v) => require(v)))

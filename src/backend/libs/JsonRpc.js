@@ -58,6 +58,7 @@ class JsonRpc {
   }
 
   async _getEthReceipt(txid) {
+    console.log('_getEthReceipt', txid);
     const type = 'getReceipt';
     const options = dvalue.clone(this._baseChain);
     options.data = this.cmd({ type, txid });
@@ -67,7 +68,7 @@ class JsonRpc {
       if (data.id !== checkId) {
         throw new Error('_getEthReceipt fail: checkId not the same');
       }
-      if (data.result) {
+      if (data.result || data.result === null) {
         return data.result;
       }
     }
@@ -93,33 +94,34 @@ class JsonRpc {
     throw new Error('_getBtcTxResult fail:', data);
   }
 
-  async getPendingTxs() {
+  async getTx(txid) {
     if (Utils.isETHLike(this._baseChain.blockchainId)) {
-      return this._getEthPendingTxs();
+      return this._getEthTx(txid);
     }
     if (Utils.isBTCLike(this._baseChain.blockchainId)) {
-      return this._getBtcPendingTxs();
+      return this._getBtcTxResult(txid);
     }
 
     throw new Error('not support block chain');
   }
 
-  async _getEthPendingTxs() {
-    const type = 'getEthPendingTx';
+  async _getEthTx(txid) {
+    console.log('_getEthTx', txid);
+    const type = 'getEthTx';
     const options = dvalue.clone(this._baseChain);
     options.data = this.cmd({ type });
     const checkId = options.data.id;
-    const data = await Utils.BTCRPC(options);
+    const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
-        throw new Error('_getEthPendingTx fail: checkId not the same');
+        throw new Error('_getEthTx fail: checkId not the same');
       }
-      if (data.result) {
-        return data.result.transactions;
+      if (data.result || data.result === null) {
+        return data.result;
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error('_getEthPendingTx fail:', data);
+    throw new Error('_getEthTx fail:', data);
   }
 
   cmd({
@@ -157,12 +159,12 @@ class JsonRpc {
           ],
         };
         break;
-      case 'getEthPendingTx':
+      case 'getEthTx':
         result = {
           jsonrpc: '2.0',
-          method: 'eth_getBlockByNumber',
+          method: 'eth_getTransactionByHash',
           params: [
-            'pending',
+            txid,
             false,
           ],
           id: dvalue.randomID(),
