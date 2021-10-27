@@ -41,6 +41,8 @@ class Worker extends Bot {
         const overview = await this.tw.overview();
         this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this._baseChain.blockchainId
             && info.type === 'currency'));
+
+        this._bridgeAddress = await this.tw.getReceivingAddress(this._accountInfo.id);
       })
       .then(() => {
         this.getJob();
@@ -259,9 +261,6 @@ class Worker extends Bot {
         console.log('targetAsset:', targetAsset);
         const targetInfo = overview.currencies.find((info) => {
           const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
-          console.log('contractAddr:', contractAddr);
-          console.log('info.blockchainId:', info.blockchainId);
-          console.log('res', (targetAsset.chainId.toLowerCase() === info.blockchainId.toLowerCase()) && (targetAsset.contractAddress === contractAddr));
           return (targetAsset.chainId.toLowerCase() === info.blockchainId.toLowerCase()) && (targetAsset.contractAddress === contractAddr);
         });
         console.log('targetInfo:', targetInfo);
@@ -373,12 +372,12 @@ class Worker extends Bot {
 
   async _depositStep1(jobListItemStruct, detailModel) {
     // get overview
-    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('detailModel.struct.id', detailModel.struct.id);
     const overview = await this.tw.overview();
-    const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
+    const srcInfo = overview.currencies.find((info) => (info.id === detailModel.struct.id));
 
     const transaction = new Transaction({});
-    transaction.accountId = this._accountInfo.accountId;
+    transaction.accountId = this._accountInfo.id;
     transaction.amount = '0';
     transaction.to = this._baseChain.tokenManagerAddress;
 
@@ -404,7 +403,7 @@ class Worker extends Bot {
 
     // get fee
     const resFee = await this.tw.getTransactionFee({
-      id: this._accountInfo.accountId,
+      id: this._accountInfo.id,
       to: this._baseChain.tokenManagerAddress,
       amount: '0',
       data: transaction.message,
@@ -415,7 +414,7 @@ class Worker extends Bot {
 
     this.logger.debug('_depositStep1 transaction', transaction);
     // send transaction mint
-    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction);
     this.logger.debug('_depositStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
@@ -429,10 +428,10 @@ class Worker extends Bot {
   }
 
   async _withdrawStep1(jobListItemStruct, detailModel, targetInfo) {
-    this.logger.debug('_withdrawStep1 detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('_withdrawStep1 detailModel.struct.id', detailModel.struct.id);
     const transaction = new Transaction({});
-    transaction.accountId = targetInfo.accountId;
-    transaction.amount = detailModel.amount;
+    transaction.accountId = targetInfo.id;
+    transaction.amount = detailModel.struct.amount;
 
     // get mapping address
     const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
@@ -440,7 +439,7 @@ class Worker extends Bot {
 
     // get fee
     const resFee = await this.tw.getTransactionFee({
-      id: targetInfo.accountId,
+      id: targetInfo.id,
       to: userAddress,
       amount: transaction.amount,
       data: '0x',
@@ -450,8 +449,8 @@ class Worker extends Bot {
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
     this.logger.debug('_withdrawStep1 transaction', transaction);
-    // send transaction mint
-    const res = await this.tw.sendTransaction(targetInfo.accountId, transaction);
+    // send transaction
+    const res = await this.tw.sendTransaction(targetInfo.id, transaction);
     this.logger.debug('_withdrawStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
@@ -508,15 +507,14 @@ class Worker extends Bot {
 
   async _withdrawStep3(jobListItemStruct, detailModel, targetInfo) {
     // get overview
-    this.logger.debug('detailModel.struct.accountId', detailModel.struct.accountId);
+    this.logger.debug('detailModel.struct.id', detailModel.struct.id);
     // const overview = await this.tw.overview();
-    // const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.accountId));
+    // const srcInfo = overview.currencies.find((info) => (info.accountId === detailModel.struct.id));
 
-    const bridgeAddress = this._baseChain.tokenManagerAddress;
     const transaction = new Transaction({});
-    transaction.accountId = this._accountInfo.accountId;
+    transaction.accountId = this._accountInfo.id;
     transaction.amount = '0';
-    transaction.to = bridgeAddress;
+    transaction.to = this._baseChain.tokenManagerAddress;
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);
@@ -525,15 +523,15 @@ class Worker extends Bot {
 
     // make token manager data
     transaction.message = TokenManagerDataBuilder.encodeBurnToken({
-      tokenAddress: targetInfo.contractAddress,
+      tokenAddress: detailModel.struct.srcTokenAddress,
       amount,
-      userAddress: bridgeAddress,
+      userAddress: this._bridgeAddress,
       txHash: detailModel.struct.srcTxHash,
     });
 
     // get fee
     const resFee = await this.tw.getTransactionFee({
-      id: this._accountInfo.accountId,
+      id: this._accountInfo.id,
       to: this._baseChain.tokenManagerAddress,
       amount: '0',
       data: transaction.message,
@@ -544,7 +542,7 @@ class Worker extends Bot {
 
     this.logger.debug('_withdrawStep3 transaction', transaction);
     // send transaction burn
-    const res = await this.tw.sendTransaction(this._accountInfo.accountId, transaction);
+    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction);
     this.logger.debug('_withdrawStep3 transaction res', res);
     if (res) {
       jobListItemStruct.mintOrBurnTxHash = res;

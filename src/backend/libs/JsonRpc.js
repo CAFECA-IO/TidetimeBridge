@@ -24,7 +24,7 @@ class JsonRpc {
       }
     }
 
-    throw new Error('getShadowTokenChainId fail:', data);
+    throw new Error(`getShadowTokenChainId fail: ${JSON.stringify(data)}`);
   }
 
   async getShadowTokenFromContractAddress(address) {
@@ -43,7 +43,7 @@ class JsonRpc {
       }
     }
 
-    throw new Error('getShadowTokenFromContractAddress fail:', data);
+    throw new Error(`getShadowTokenFromContractAddress fail: ${JSON.stringify(data)}`);
   }
 
   async getTargetTxResult(txid) {
@@ -73,7 +73,7 @@ class JsonRpc {
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error('_getEthReceipt fail:', data);
+    throw new Error(`_getEthReceipt fail: ${JSON.stringify(data)}`);
   }
 
   async _getBtcTxResult(txid) {
@@ -91,7 +91,7 @@ class JsonRpc {
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error('_getBtcTxResult fail:', data);
+    throw new Error(`_getBtcTxResult fail: ${JSON.stringify(data)}`);
   }
 
   async getTx(txid) {
@@ -107,10 +107,12 @@ class JsonRpc {
 
   async _getEthTx(txid) {
     console.log('_getEthTx', txid);
+    console.log('_getEthTx base', this._baseChain);
     const type = 'getEthTx';
     const options = dvalue.clone(this._baseChain);
-    options.data = this.cmd({ type });
+    options.data = this.cmd({ type, txid });
     const checkId = options.data.id;
+    console.log('options:', options);
     const data = await Utils.ETHRPC(options);
     if (data instanceof Object) {
       if (data.id !== checkId) {
@@ -121,7 +123,7 @@ class JsonRpc {
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error('_getEthTx fail:', data);
+    throw new Error(`_getEthTx fail: ${JSON.stringify(data)}`);
   }
 
   cmd({
@@ -165,7 +167,6 @@ class JsonRpc {
           method: 'eth_getTransactionByHash',
           params: [
             txid,
-            false,
           ],
           id: dvalue.randomID(),
         };

@@ -6,7 +6,7 @@ class bridgeDetail {
    */
   constructor({
     pk = '',
-    accountId = '',
+    id = '',
     srcChainId = '',
     srcTokenAddress = '',
     destChainId = '',
@@ -22,7 +22,7 @@ class bridgeDetail {
     triggerData = '',
   }) {
     this._pk = pk;
-    this._accountId = accountId;
+    this._id = id;
     this._srcChainId = srcChainId;
     this._srcTokenAddress = srcTokenAddress;
     this._destChainId = destChainId;
@@ -41,7 +41,7 @@ class bridgeDetail {
   // setter
   set pk(pk) { this._pk = pk; }
 
-  set accountId(accountId) { this._accountId = accountId; }
+  set id(id) { this._id = id; }
 
   set srcChainId(srcChainId) { this._srcChainId = srcChainId; }
 
@@ -72,7 +72,7 @@ class bridgeDetail {
   // getter
   get pk() { return this._pk ? this._pk : `${this.srcChainId}-${this.srcTxHash}`; }
 
-  get accountId() { return this._accountId; }
+  get id() { return this._id; }
 
   get srcChainId() { return this._srcChainId; }
 
@@ -103,7 +103,7 @@ class bridgeDetail {
   get data() {
     return {
       pk: this.pk,
-      accountId: this.accountId,
+      id: this.id,
       srcChainId: this.srcChainId,
       srcTokenAddress: this.srcTokenAddress,
       destChainId: this.destChainId,
