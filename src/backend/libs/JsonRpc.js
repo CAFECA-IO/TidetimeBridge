@@ -1,5 +1,6 @@
 const dvalue = require('dvalue');
 const Utils = require('./Utils');
+const SupportChain = require('./SupportChain');
 
 class JsonRpc {
   constructor(blockChainConfig) {
@@ -23,7 +24,7 @@ class JsonRpc {
       }
     }
 
-    throw new Error('getShadowTokenChainId fail:', data);
+    throw new Error(`getShadowTokenChainId fail: ${JSON.stringify(data)}`);
   }
 
   async getShadowTokenFromContractAddress(address) {
@@ -42,7 +43,87 @@ class JsonRpc {
       }
     }
 
-    throw new Error('getShadowTokenFromContractAddress fail:', data);
+    throw new Error(`getShadowTokenFromContractAddress fail: ${JSON.stringify(data)}`);
+  }
+
+  async getTargetTxResult(txid) {
+    if (Utils.isETHLike(this._baseChain.blockchainId)) {
+      return this._getEthReceipt(txid);
+    }
+    if (Utils.isBTCLike(this._baseChain.blockchainId)) {
+      return this._getBtcTxResult(txid);
+    }
+
+    throw new Error('not support block chain');
+  }
+
+  async _getEthReceipt(txid) {
+    console.log('_getEthReceipt', txid);
+    const type = 'getReceipt';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getEthReceipt fail: checkId not the same');
+      }
+      if (data.result || data.result === null) {
+        return data.result;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error(`_getEthReceipt fail: ${JSON.stringify(data)}`);
+  }
+
+  async _getBtcTxResult(txid) {
+    const type = 'getBtcTx';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type, txid });
+    const checkId = options.data.id;
+    const data = await Utils.BTCRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getBtcTxResult fail: checkId not the same');
+      }
+      if (data.result) {
+        return data.result;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error(`_getBtcTxResult fail: ${JSON.stringify(data)}`);
+  }
+
+  async getTx(txid) {
+    if (Utils.isETHLike(this._baseChain.blockchainId)) {
+      return this._getEthTx(txid);
+    }
+    if (Utils.isBTCLike(this._baseChain.blockchainId)) {
+      return this._getBtcTxResult(txid);
+    }
+
+    throw new Error('not support block chain');
+  }
+
+  async _getEthTx(txid) {
+    console.log('_getEthTx', txid);
+    console.log('_getEthTx base', this._baseChain);
+    const type = 'getEthTx';
+    const options = dvalue.clone(this._baseChain);
+    options.data = this.cmd({ type, txid });
+    const checkId = options.data.id;
+    console.log('options:', options);
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('_getEthTx fail: checkId not the same');
+      }
+      if (data.result || data.result === null) {
+        return data.result;
+      }
+    }
+    console.log(JSON.stringify(data));
+    throw new Error(`_getEthTx fail: ${JSON.stringify(data)}`);
   }
 
   cmd({
@@ -66,6 +147,27 @@ class JsonRpc {
           jsonrpc: '2.0',
           method: 'eth_getTransactionReceipt',
           params: [txid],
+          id: dvalue.randomID(),
+        };
+        break;
+      case 'getBtcTx':
+        result = {
+          jsonrpc: '1.0',
+          id: dvalue.randomID(),
+          method: 'getrawtransaction',
+          params: [
+            txid,
+            true,
+          ],
+        };
+        break;
+      case 'getEthTx':
+        result = {
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionByHash',
+          params: [
+            txid,
+          ],
           id: dvalue.randomID(),
         };
         break;

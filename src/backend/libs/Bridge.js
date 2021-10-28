@@ -56,11 +56,12 @@ class Bridge extends Bot {
   async createJob(data) {
     try {
       const { account, tx } = data.value;
+      console.log('trigger data:', data.value);
 
       const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
       const { struct: structBD } = bridgeDetailModel;
       structBD.srcChainId = account.blockchainId;
-      structBD.accountId = account.accountId;
+      structBD.id = account.id;
       structBD.srcTokenAddress = account.type === 'token' ? account.contract : '0x0000000000000000000000000000000000000000';
       structBD.srcAddress = tx.sourceAddresses;
       structBD.srcTxHash = tx.txid;
@@ -78,6 +79,7 @@ class Bridge extends Bot {
       await bridgeDetailModel.save();
       await jobListItem.save();
     } catch (error) {
+      this.logger.error(error);
       setTimeout(this.createJob(data), 1000);
     }
   }

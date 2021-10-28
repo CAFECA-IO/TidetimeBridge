@@ -13,7 +13,16 @@ const i18n = require('i18n');
 const dvalue = require('dvalue');
 const ecRequest = require('ecrequest');
 
+const SupportChain = require('./SupportChain');
+
 class Utils {
+  constructor() {
+    // assign by readConfig
+    this.config = {};
+    this.logger = {};
+    this.database = {};
+  }
+
   static waterfallPromise(jobs) {
     return jobs.reduce((prev, curr) => prev.then(() => curr()), Promise.resolve());
   }
@@ -175,6 +184,69 @@ class Utils {
     }
 
     return result;
+  }
+
+  static base64Encode(string) {
+    const buf = Buffer.from(string);
+    return buf.toString('base64');
+  }
+
+  static BTCRPC({
+    protocol,
+    port,
+    hostname,
+    // eslint-disable-next-line no-shadow
+    path,
+    data,
+    user,
+    password,
+  }) {
+    const basicAuth = this.base64Encode(`${user}:${password}`);
+    const opt = {
+      protocol,
+      port,
+      hostname,
+      path,
+      headers: {
+        'content-type': 'application/json',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      data,
+      timeout: 30000,
+    };
+    const start = new Date();
+    return ecRequest
+      .post(opt)
+      .then((rs) => {
+        let response = '';
+        try {
+          response = JSON.parse(rs.data);
+        } catch (e) {
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${data.method}), error: ${e.message}`,
+          );
+          this.logger.error(
+            `BTCRPC(host: ${hostname} method:${
+              data.method
+            }), rs.data.toString(): ${rs.data.toString()}`,
+          );
+          return false;
+        }
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
+        return Promise.resolve(response);
+      })
+      .catch((e) => {
+        this.logger.log(
+          `RPC ${opt.hostname} method: ${opt.data.method} response time: ${
+            new Date() - start
+          }ms`,
+        );
+        throw e;
+      });
   }
 
   static ETHRPC({
@@ -532,6 +604,9 @@ class Utils {
     config, database, logger, i18n: botsI18n,
   }) {
     const interfaceFN = 'Bot.js';
+    this.config = config;
+    this.database = database;
+    this.logger = logger;
     return this.scanFolder({ folder: __dirname })
       .then((list) => list.filter((v) => path.parse(v).name !== path.parse(interfaceFN).name))
       .then((list) => list.map((v) => require(v)))
@@ -643,8 +718,8 @@ class Utils {
 
   static isBTCLike(chainId) {
     switch (chainId) {
-      case '80000000':
-      case 'F0000000':
+      case SupportChain.bitcoin_mainnet:
+      case SupportChain.bitcoin_testnet:
         return true;
       default:
         return false;
@@ -653,9 +728,9 @@ class Utils {
 
   static isETHLike(chainId) {
     switch (chainId) {
-      case '8000003C':
-      case 'F000003C':
-      case '80001F51':
+      case SupportChain.ethereum_mainnet:
+      case SupportChain.ethereum_ropsten:
+      case SupportChain.tidetime:
         return true;
       default:
         return false;
@@ -798,6 +873,12 @@ class Utils {
     }
     result = arr.join('');
     return result;
+  }
+
+  static sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 }
 

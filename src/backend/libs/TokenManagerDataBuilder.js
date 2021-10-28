@@ -28,6 +28,7 @@ class TokenManagerDataBuilder {
     } = param;
 
     if (!tokenAddress || !amount || !userAddress || !txHash) {
+      this.logger.error('encodeBurnToken error', param);
       throw new Error('encodeBurnToken invalid input');
     }
 
