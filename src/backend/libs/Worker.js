@@ -414,7 +414,7 @@ class Worker extends Bot {
 
     this.logger.debug('_depositStep1 transaction', transaction);
     // send transaction mint
-    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction);
+    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction.data);
     this.logger.debug('_depositStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
@@ -450,7 +450,7 @@ class Worker extends Bot {
 
     this.logger.debug('_withdrawStep1 transaction', transaction);
     // send transaction
-    const res = await this.tw.sendTransaction(targetInfo.id, transaction);
+    const res = await this.tw.sendTransaction(targetInfo.id, transaction.data);
     this.logger.debug('_withdrawStep1 transaction res', res);
     if (res) {
       jobListItemStruct.destTxHash = res;
@@ -518,10 +518,11 @@ class Worker extends Bot {
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);
-    const bnDecimals = (new BigNumber(10)).pow(this._accountInfo.decimals);
+    const bnDecimals = (new BigNumber(10)).pow(targetInfo.decimals);
     const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
 
     // make token manager data
+    this.logger.debug('targetInfo', targetInfo);
     transaction.message = TokenManagerDataBuilder.encodeBurnToken({
       tokenAddress: detailModel.struct.srcTokenAddress,
       amount,
@@ -542,7 +543,7 @@ class Worker extends Bot {
 
     this.logger.debug('_withdrawStep3 transaction', transaction);
     // send transaction burn
-    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction);
+    const res = await this.tw.sendTransaction(this._accountInfo.id, transaction.data);
     this.logger.debug('_withdrawStep3 transaction res', res);
     if (res) {
       jobListItemStruct.mintOrBurnTxHash = res;

@@ -21,8 +21,6 @@ class Transaction {
   // setter
   set accountId(accountId) { this._accountId = accountId; }
 
-  set from(from) { this._from = from; }
-
   set to(to) { this._to = to; }
 
   set amount(amount) { this._amount = amount; }
@@ -38,8 +36,6 @@ class Transaction {
   // getter
   get accountId() { return this._accountId; }
 
-  get from() { return this._from; }
-
   get to() { return this._to; }
 
   get amount() { return this._amount; }
@@ -51,6 +47,18 @@ class Transaction {
   get feeUnit() { return this._feeUnit; }
 
   get message() { return this._message; }
+
+  get data() {
+    return {
+      accountId: this.accountId,
+      to: this.to,
+      amount: this.amount,
+      fee: this.fee,
+      feePerUnit: this.feePerUnit,
+      feeUnit: this.feeUnit,
+      message: this.message,
+    };
+  }
 }
 
 module.exports = Transaction;
