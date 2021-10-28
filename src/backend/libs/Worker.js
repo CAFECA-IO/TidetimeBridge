@@ -200,7 +200,7 @@ class Worker extends Bot {
         this.getJob();
       }, JOB_INTERVAL);
     } catch (e) {
-      console.trace('getJob failed.', e);
+      this.logger.trace('getJob failed.', e);
       setTimeout(() => {
         this.getJob();
       }, JOB_INTERVAL);
@@ -258,12 +258,12 @@ class Worker extends Bot {
 
         // get overview
         const overview = await this.tw.overview();
-        console.log('targetAsset:', targetAsset);
+        this.logger.debug('targetAsset:', targetAsset);
         const targetInfo = overview.currencies.find((info) => {
           const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
           return (targetAsset.chainId.toLowerCase() === info.blockchainId.toLowerCase()) && (targetAsset.contractAddress === contractAddr);
         });
-        console.log('targetInfo:', targetInfo);
+        this.logger.debug('targetInfo:', targetInfo);
 
         switch (jobListItemStruct.step) {
           case 1:
@@ -278,7 +278,7 @@ class Worker extends Bot {
         }
       }
     } catch (e) {
-      console.trace('doJob failed', e);
+      this.logger.trace('doJob failed', e);
       delete this.workingList[jobListItemStruct.pk];
     }
     return true;
@@ -286,61 +286,51 @@ class Worker extends Bot {
 
   async finishJob(jobListItemStruct, detailModel) {
     const oriPk = jobListItemStruct.pk;
-    try {
-      // 1. save ori pk
-      // 2. save new pk with DONE_PREFIX
-      // 3. save jobListItem with newPk into db
-      // 4. remove oriPk from db
-      // 5. remove workingList
+    // 1. save ori pk
+    // 2. save new pk with DONE_PREFIX
+    // 3. save jobListItem with newPk into db
+    // 4. remove oriPk from db
+    // 5. remove workingList
 
-      const jobListItemModelNew = await ModelFactory.create({
-        database: this.database,
-        struct: this.tableName,
-      });
+    const jobListItemModelNew = await ModelFactory.create({
+      database: this.database,
+      struct: this.tableName,
+    });
 
-      jobListItemModelNew.struct = jobListItemStruct;
-      jobListItemModelNew.struct.finalized = true;
-      detailModel.struct.finalized = true;
+    jobListItemModelNew.struct = jobListItemStruct;
+    jobListItemModelNew.struct.finalized = true;
+    detailModel.struct.finalized = true;
 
-      await detailModel.save();
-      const saveRes = await jobListItemModelNew.save();
+    await detailModel.save();
+    const saveRes = await jobListItemModelNew.save();
 
-      const removeRes = await ModelFactory.remove({
-        database: this.database,
-        struct: this.tableName,
-        condition: {
-          key: oriPk,
-        },
-      });
-      this.logger.debug(saveRes);
+    const removeRes = await ModelFactory.remove({
+      database: this.database,
+      struct: this.tableName,
+      condition: {
+        key: oriPk,
+      },
+    });
+    this.logger.debug(saveRes);
 
-      delete this.workingList[oriPk];
-    } catch (e) {
-      console.trace('finishJob failed.', e);
-      delete this.workingList[oriPk];
-    }
+    delete this.workingList[oriPk];
   }
 
   async updateJob(jobListItemStruct, detailModel, success) {
-    try {
-      if (success) {
-        jobListItemStruct.step += 1;
-      }
-
-      await detailModel.save();
-      const res = await ModelFactory.update({
-        database: this.database,
-        struct: this.tableName,
-        condition: {
-          key: jobListItemStruct.pk,
-        },
-        data: jobListItemStruct.data,
-      });
-      this.logger.debug(res);
-    } catch (e) {
-      console.trace('updateJob failed', e);
-      delete this.workingList[jobListItemStruct.pk];
+    if (success) {
+      jobListItemStruct.step += 1;
     }
+
+    await detailModel.save();
+    const res = await ModelFactory.update({
+      database: this.database,
+      struct: this.tableName,
+      condition: {
+        key: jobListItemStruct.pk,
+      },
+      data: jobListItemStruct.data,
+    });
+    this.logger.debug(res);
   }
 
   /**
@@ -474,7 +464,7 @@ class Worker extends Bot {
       let success = true;
       if (!receipt) {
         const pendingTxs = await jsonrpc.getTx(jobListItemStruct.destTxHash);
-        console.log('pendingTxs', pendingTxs);
+        this.logger.debug('pendingTxs', pendingTxs);
         if (pendingTxs) {
           await Utils.sleep(5000);
           throw new Error('receipt not found');
