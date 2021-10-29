@@ -158,7 +158,7 @@ class Worker extends Bot {
     //       amount: '0',
     //       data: '0x',
     //     });
-    //     tx.feePerUnit = resFee.feePerUnit.standard;
+    //     tx.feePerUnit = resFee.feePerUnit.fast;
     //     tx.feeUnit = resFee.unit;
     //     tx.fee = (new BigNumber(tx.feePerUnit)).multipliedBy(tx.feeUnit).toFixed();
 
@@ -398,7 +398,7 @@ class Worker extends Bot {
       amount: '0',
       data: transaction.message,
     });
-    transaction.feePerUnit = resFee.feePerUnit.standard;
+    transaction.feePerUnit = resFee.feePerUnit.fast;
     transaction.feeUnit = resFee.unit;
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
@@ -434,7 +434,7 @@ class Worker extends Bot {
       amount: transaction.amount,
       data: '0x',
     });
-    transaction.feePerUnit = resFee.feePerUnit.standard;
+    transaction.feePerUnit = resFee.feePerUnit.fast;
     transaction.feeUnit = resFee.unit;
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
@@ -527,7 +527,7 @@ class Worker extends Bot {
       amount: '0',
       data: transaction.message,
     });
-    transaction.feePerUnit = resFee.feePerUnit.standard;
+    transaction.feePerUnit = resFee.feePerUnit.fast;
     transaction.feeUnit = resFee.unit;
     transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
 
