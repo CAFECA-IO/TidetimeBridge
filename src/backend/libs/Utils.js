@@ -593,6 +593,7 @@ class Utils {
       log: console.log,
       debug: base.debug ? console.log : () => {},
       trace: console.trace,
+      error: console.error,
     });
   }
 

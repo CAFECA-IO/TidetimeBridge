@@ -10,6 +10,7 @@ debug = false
 [blockchain.base]
 type = "ethereum"
 tokenManagerAddress = ''
+addressMappingAddress = ''
 blockchainId = 'F000003C'
 protocol = "http:"
 hostname = "127.0.0.1"
@@ -45,5 +46,7 @@ networkPublish = false
 [api]
 pathname = [
   "get | /,/version | Static.Utils.readPackageInfo",
-  "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress"
+  "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress",
+  "post | /api/v1/registDeposit | Bot.Bridge.registDeposit",
+  "post | /api/v1/registWithdraw | Bot.Bridge.registWithdraw"
 ]

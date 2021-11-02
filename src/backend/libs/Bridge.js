@@ -1,7 +1,11 @@
 const TideWallet = require('@cafeca/tidewalletjs/src/index');
+const BigNumber = require('bignumber.js');
+
 const Bot = require('./Bot');
 const ModelFactory = require('./ModelFactory');
 const ResponseFormat = require('./ResponseFormat');
+const Transaction = require('../structs/Transaction');
+const AddressMappingDataBuilder = require('./AddressMappingDataBuilder');
 
 class Bridge extends Bot {
   constructor() {
@@ -45,6 +49,11 @@ class Bridge extends Bot {
 
   start() {
     return super.start()
+      .then(async () => {
+        const overview = await this.tw.overview();
+        this._accountInfo = overview.currencies.find((info) => (info.blockchainId === this._baseChain.blockchainId
+            && info.type === 'currency'));
+      })
       .then(() => this);
   }
 
@@ -107,6 +116,135 @@ class Bridge extends Bot {
         addresses: curAndAddr,
       },
     });
+  }
+
+  async registDeposit({ params }) {
+    try {
+      const { blockchainId, address } = params;
+
+      const overview = await this.tw.overview();
+      const findCurrency = overview.currencies.find((cur) => (cur.type === 'currency' && cur.blockchainId === blockchainId));
+
+      const ResAddr = await this.tw.BridgeAccountReceive(findCurrency.id);
+
+      // don't await
+      const recordRes = this._setDepositAddress(blockchainId, ResAddr, address);
+
+      return new ResponseFormat({
+        message: '',
+        payload: {
+          address: ResAddr,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      return new ResponseFormat({
+        message: 'registDeposit error',
+      });
+    }
+  }
+
+  async registWithdraw({ params }) {
+    try {
+      const { blockchainId, fromAddress, toAddress } = params;
+
+      // don't await
+      const recordRes = this._setDepositAddress(blockchainId, fromAddress, toAddress);
+
+      return new ResponseFormat({
+        message: '',
+        payload: {
+          success: true,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      return new ResponseFormat({
+        message: 'registDeposit error',
+      });
+    }
+  }
+
+  async _setDepositAddress(chainId, fromAddress, toAddress, retry = 0) {
+    try {
+      const transaction = new Transaction({});
+      transaction.accountId = this._accountInfo.id;
+      transaction.amount = '0';
+      transaction.to = this.config.blockchain.base.addressMappingAddress;
+
+      // make address mapping data
+      transaction.message = AddressMappingDataBuilder.encodeSetDepositAddress({
+        chainId,
+        fromAddress,
+        toAddress,
+      });
+
+      // get fee
+      const resFee = await this.tw.getTransactionFee({
+        id: this._accountInfo.id,
+        to: transaction.to,
+        amount: '0',
+        data: transaction.message,
+      });
+      transaction.feePerUnit = resFee.feePerUnit.fast;
+      transaction.feeUnit = resFee.unit;
+      transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
+
+      this.logger.debug('_setDepositAddress transaction', transaction);
+      const res = await this.tw.sendTransaction(this._accountInfo.id, transaction.data);
+      this.logger.debug('_setDepositAddress transaction res', res);
+      if (!res) {
+        throw new Error(`_setDepositAddress sendTransaction fail. res: ${JSON.stringify(res)}`);
+      }
+      return res;
+    } catch (error) {
+      this.logger.error(error);
+      if (retry < 3) {
+        retry += 1;
+        this._setDepositAddress(chainId, fromAddress, toAddress, retry);
+      }
+    }
+  }
+
+  async _setWithdrawAddress(chainId, fromAddress, toAddress, retry = 0) {
+    try {
+      const transaction = new Transaction({});
+      transaction.accountId = this._accountInfo.id;
+      transaction.amount = '0';
+      transaction.to = this.config.blockchain.base.addressMappingAddress;
+
+      // make address mapping data
+      transaction.message = AddressMappingDataBuilder.encodeSetWithdrawAddress({
+        chainId,
+        fromAddress,
+        toAddress,
+      });
+
+      // get fee
+      const resFee = await this.tw.getTransactionFee({
+        id: this._accountInfo.id,
+        to: transaction.to,
+        amount: '0',
+        data: transaction.message,
+      });
+      transaction.feePerUnit = resFee.feePerUnit.fast;
+      transaction.feeUnit = resFee.unit;
+      transaction.fee = (new BigNumber(transaction.feePerUnit)).multipliedBy(transaction.feeUnit).toFixed();
+
+      this.logger.debug('_setWithdrawAddress transaction', transaction);
+      const res = await this.tw.sendTransaction(this._accountInfo.id, transaction.data);
+      this.logger.debug('_setWithdrawAddress transaction res', res);
+      if (!res) {
+        throw new Error(`_setWithdrawAddress sendTransaction fail. res: ${JSON.stringify(res)}`);
+      }
+      return res;
+    } catch (error) {
+      this.logger.error(error);
+      if (retry < 3) {
+        retry += 1;
+        this._setWithdrawAddress(chainId, fromAddress, toAddress, retry);
+      }
+    }
   }
 }
 
