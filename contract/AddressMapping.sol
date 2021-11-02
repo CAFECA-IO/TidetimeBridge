@@ -4,9 +4,9 @@ pragma solidity ^0.6.12;
 
 contract AddressMapping {
     address owner;
-    mapping (string => bytes32) mappingTable;
+    mapping (string => string) mappingTable;
     
-    event SetMapping(bytes4 chainID, bytes32 address1, bytes32 address2);
+    event SetMapping(bytes4 chainID, string address1, string address2);
 
     constructor()
         payable
@@ -23,24 +23,25 @@ contract AddressMapping {
 
     function getAddress(
         bytes4 chainID_,
-        bytes32 fromAddress_
+        string memory fromAddress_
     )
         public
         view
-    returns(bytes32 _findAddress) {
-        bytes32 findAddress = mappingTable[append(chainID_, fromAddress_)];
-        return (findAddress);
+    returns(string memory findAddress) {
+        findAddress = mappingTable[append(chainID_, fromAddress_)];
+        return findAddress;
     }
     
     function setDepositAddress(
         bytes4 chainID_,
-        bytes32 fromAddress_,
-        bytes32 toAddress_
+        string memory fromAddress_,
+        string memory toAddress_
     )
         onlyOwner
         public
     returns(bool success) {
-        require(mappingTable[append(chainID_, fromAddress_)] == bytes32(0), "chainID_, fromAddress_ exist");
+        string memory findAddress = mappingTable[append(chainID_, fromAddress_)];
+        require(keccak256(bytes(findAddress)) == keccak256(bytes(string(""))), "chainID_, fromAddress_ exist");
         mappingTable[append(chainID_, fromAddress_)] = toAddress_;
         emit SetMapping(chainID_, fromAddress_, toAddress_);
         return true;
@@ -48,8 +49,8 @@ contract AddressMapping {
     
     function setWithdrawAddress(
         bytes4 chainID_,
-        bytes32 fromAddress_,
-        bytes32 toAddress_
+        string memory fromAddress_,
+        string memory toAddress_
     )
         onlyOwner
         public
@@ -68,7 +69,7 @@ contract AddressMapping {
         owner = newOwner_;
     }
     
-    function append(bytes4 a, bytes32 b) internal pure returns (string memory) {
+    function append(bytes4 a, string memory b) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 }
