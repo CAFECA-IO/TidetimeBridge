@@ -883,6 +883,7 @@ class Utils {
   }
 
   static encodeString(string) {
+    if (typeof string !== 'string') throw new Error(`encodeString ${string} must input string`);
     const bufBaseStr = Buffer.from(string);
     const hexLenStr = Utils.toHex(bufBaseStr.length);
     // pad start

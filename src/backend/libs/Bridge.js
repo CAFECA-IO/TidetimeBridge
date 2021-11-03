@@ -20,6 +20,7 @@ class Bridge extends Bot {
       config, database, logger, i18n,
     })
       .then(() => {
+        this._baseChain = this.config.blockchain.base;
         this.tw = new TideWallet();
         // this.tw.on('ready', () => { this.logger.debug('TideWallet is Ready'); });
         this.tw.on('notice', (data) => {
@@ -125,10 +126,11 @@ class Bridge extends Bot {
       const overview = await this.tw.overview();
       const findCurrency = overview.currencies.find((cur) => (cur.type === 'currency' && cur.blockchainId === blockchainId));
 
-      const ResAddr = await this.tw.BridgeAccountReceive(findCurrency.id);
+      const ResAddr = await this.tw.getBridgeAccountReceive(findCurrency.id);
+      console.log('ResAddr', ResAddr, typeof ResAddr);
 
       // don't await
-      const recordRes = this._setDepositAddress(blockchainId, ResAddr, address);
+      const recordRes = this._setDepositAddress(blockchainId, ResAddr.address, address);
 
       return new ResponseFormat({
         message: '',
