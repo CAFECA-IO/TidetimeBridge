@@ -358,7 +358,7 @@ class Worker extends Bot {
     while (retry < 3) {
       try {
         addressEndoce = await jsonrpc.getMappingAddress(blockchainId, address);
-        if (!addressEndoce) throw new Error('');
+        if (!addressEndoce) throw new Error('getMappingAddress something wrong');
         addressDecoded = SmartContract.parseString(addressEndoce);
         if (addressDecoded === '') throw new Error('mapping not found, maybe not on contract yet.', 400);
         break;
@@ -397,7 +397,7 @@ class Worker extends Bot {
     transaction.to = this._baseChain.tokenManagerAddress;
 
     // get mapping address
-    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+    const userAddress = await this.getMappingAddress(detailModel.struct.srcChainId, detailModel.struct.srcAddress);
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);

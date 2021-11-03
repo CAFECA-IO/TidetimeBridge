@@ -6,6 +6,7 @@ const ModelFactory = require('./ModelFactory');
 const ResponseFormat = require('./ResponseFormat');
 const Transaction = require('../structs/Transaction');
 const AddressMappingDataBuilder = require('./AddressMappingDataBuilder');
+const Utils = require('./Utils');
 
 class Bridge extends Bot {
   constructor() {
