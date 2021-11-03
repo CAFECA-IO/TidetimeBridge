@@ -1,4 +1,5 @@
 const Utils = require('./Utils');
+const SmartContract = require('./SmartContract');
 
 const CONTRACT_CODE = {
   setDepositAddress: '78c247a3',
@@ -39,8 +40,8 @@ class AddressMappingDataBuilder {
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
 
     let strLocation = 3 * 32; // 3 param * 32 byte
-    const encodeFromAddress = Utils.encodeString(fromAddress);
-    const encodeToAddress = Utils.encodeString(toAddress);
+    const encodeFromAddress = SmartContract.encodeString(fromAddress);
+    const encodeToAddress = SmartContract.encodeString(toAddress);
 
     let res = '0x';
     const encodeStrArr = [];
@@ -96,8 +97,8 @@ class AddressMappingDataBuilder {
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
 
     let strLocation = 3 * 32; // 3 param * 32 byte
-    const encodeFromAddress = Utils.encodeString(fromAddress);
-    const encodeToAddress = Utils.encodeString(toAddress);
+    const encodeFromAddress = SmartContract.encodeString(fromAddress);
+    const encodeToAddress = SmartContract.encodeString(toAddress);
 
     let res = '0x';
     const encodeStrArr = [];
@@ -145,7 +146,7 @@ class AddressMappingDataBuilder {
 
     let strLocation = 2 * 32; // 2 param * 32 byte
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
-    const encodeFromAddress = Utils.encodeString(fromAddress);
+    const encodeFromAddress = SmartContract.encodeString(fromAddress);
 
     let res = '0x';
     const encodeStrArr = [];

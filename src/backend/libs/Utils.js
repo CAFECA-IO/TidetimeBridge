@@ -881,30 +881,6 @@ class Utils {
       setTimeout(resolve, ms);
     });
   }
-
-  static encodeString(string) {
-    if (typeof string !== 'string') throw new Error(`encodeString ${string} must input string`);
-    const bufBaseStr = Buffer.from(string);
-    const hexLenStr = Utils.toHex(bufBaseStr.length);
-    // pad start
-    const bufHexLenStr = Buffer.from(Utils.leftPad32(hexLenStr), 'hex');
-
-    // pad end
-    const bufSlot = [];
-    for (let i = 0; i < bufBaseStr.length; i += 32) {
-      const buf32 = Buffer.alloc(32);
-      const target = bufBaseStr.slice(i, i + 32);
-      const res = Buffer.concat([target, buf32], 32);
-      bufSlot.push(res);
-    }
-    const bufStr = Buffer.concat(bufSlot);
-
-    const res = Buffer.concat([bufHexLenStr, bufStr]);
-    return {
-      length: res.length,
-      data: res.toString('hex'),
-    };
-  }
 }
 
 module.exports = Utils;

@@ -151,7 +151,7 @@ class Bridge extends Bot {
       const { blockchainId, fromAddress, toAddress } = params;
 
       // don't await
-      const recordRes = this._setDepositAddress(blockchainId, fromAddress, toAddress);
+      const recordRes = this._setWithdrawAddress(blockchainId, fromAddress, toAddress);
 
       return new ResponseFormat({
         message: '',

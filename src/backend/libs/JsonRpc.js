@@ -1,6 +1,7 @@
 const dvalue = require('dvalue');
 const Utils = require('./Utils');
 const SupportChain = require('./SupportChain');
+const AddressMappingDataBuilder = require('./AddressMappingDataBuilder');
 
 class JsonRpc {
   constructor(blockChainConfig) {
@@ -44,6 +45,31 @@ class JsonRpc {
     }
 
     throw new Error(`getShadowTokenFromContractAddress fail: ${JSON.stringify(data)}`);
+  }
+
+  async getMappingAddress(chainId, fromAddress) {
+    const type = 'callContract';
+    const options = dvalue.clone(this._baseChain);
+    const command = AddressMappingDataBuilder.encodeGetAddress({ chainId, fromAddress });
+    options.data = this.cmd({
+      type,
+      address: this._baseChain.addressMappingAddress,
+      command,
+    });
+    const checkId = options.data.id;
+    console.log('getMappingAddress:', options);
+
+    const data = await Utils.ETHRPC(options);
+    if (data instanceof Object) {
+      if (data.id !== checkId) {
+        throw new Error('getMappingAddress fail: checkId not the same');
+      }
+      if (data.result) {
+        return data.result;
+      }
+    }
+
+    throw new Error(`getMappingAddress fail: ${JSON.stringify(data)}`);
   }
 
   async getTargetTxResult(txid) {
