@@ -146,9 +146,10 @@ class Bridge extends Bot {
     }
   }
 
-  async registWithdraw({ params }) {
+  async registWithdraw({ params, body }) {
     try {
-      const { blockchainId, fromAddress, toAddress } = params;
+      const { blockchainId, fromAddress } = params;
+      const { toAddress } = body;
 
       // don't await
       const recordRes = this._setWithdrawAddress(blockchainId, fromAddress, toAddress);

@@ -57,5 +57,5 @@ pathname = [
   "get | /,/version | Static.Utils.readPackageInfo",
   "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress",
   "post | /api/v1/registDeposit/blockchainId/:blockchainId/address/:address | Bot.Bridge.registDeposit",
-  "post | /api/v1/registWithdraw/blockchainId/:blockchainId/address/:address | Bot.Bridge.registWithdraw"
+  "post | /api/v1/registWithdraw/blockchainId/:blockchainId/fromAddress/:fromAddress | Bot.Bridge.registWithdraw"
 ]

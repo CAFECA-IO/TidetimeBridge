@@ -123,13 +123,7 @@ class TokenManagerDataBuilder {
     const encodeSymbol = this.encodeString(this.renameSymbol(symbol));
 
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
-    let normalizeFromAddr;
-    if (Utils.isBTCLike(chainId)) {
-      // ++ todo add btc address decode
-    }
-    if (Utils.isETHLike(chainId)) {
-      normalizeFromAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
-    }
+    const normalizeFromAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
 
     const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
     const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
