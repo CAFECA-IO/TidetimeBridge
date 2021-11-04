@@ -264,7 +264,7 @@ class Worker extends Bot {
         const overview = await this.tw.overview();
         this.logger.debug('targetAsset:', targetAsset);
         const targetInfo = overview.currencies.find((info) => {
-          const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
+          const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(info.contract.replace('0x', ''))}` : `0x${Utils.leftPad32('0')}`;
           return (targetAsset.chainId.toLowerCase() === info.blockchainId.toLowerCase()) && (targetAsset.contractAddress === contractAddr);
         });
         this.logger.debug('targetInfo:', targetInfo);

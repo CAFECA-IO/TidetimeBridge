@@ -1,4 +1,5 @@
 const Utils = require('./Utils');
+const SmartContract = require('./SmartContract');
 
 const CONTRACT_CODE = {
   burnToken: '8523c3ca',
@@ -32,10 +33,10 @@ class TokenManagerDataBuilder {
       throw new Error('encodeBurnToken invalid input');
     }
 
-    const normalizeTokenAddr = Utils.leftPad32(Utils.toHex(tokenAddress));
+    const normalizeTokenAddr = Utils.leftPad32(tokenAddress.replace('0x', ''));
     const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
-    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
+    const normalizeUserAddress = Utils.leftPad32(userAddress.replace('0x', ''));
+    const normalizeTxHash = Utils.leftPad32(txHash.replace('0x', ''));
 
     let res = '0x';
     res += CONTRACT_CODE.burnToken;
@@ -71,7 +72,7 @@ class TokenManagerDataBuilder {
       // ++ todo add btc address decode
     }
     if (Utils.isETHLike(chainId)) {
-      normalizeAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
+      normalizeAddr = Utils.leftPad32(fromContractAddress.replace('0x', ''));
     }
 
     let res = '0x';
@@ -110,6 +111,19 @@ class TokenManagerDataBuilder {
     // 0000000000000000000000000000000000000000000000000000000000000002
     // 5454000000000000000000000000000000000000000000000000000000000000
 
+    // 0x6adc8e99
+    // 0000000000000000000000000000000000000000000000000000000000000100
+    // 0000000000000000000000000000000000000000000000000000000000000140
+    // 0000000000000000000000000000000000000000000000000000000000000008
+    // f000000000000000000000000000000000000000000000000000000000000000
+    // 0000000000000000000000000000000000000000000000000000000000000000
+    // 00000000000000000000000027642a1f15aa546c97b709a058b4434e93d28a29
+    // 0000000000000000000000000000000000000000000000000000000000002710
+    // 39393464646531303761366464303939373032656633346233383564633133316539313733643434333339663132626236636533383761613365616361313939
+    // 000000000000000000000000000000000000000000000000000000000000000f
+    // 426974636f696e20546573746e65740000000000000000000000000000000000
+    // 0000000000000000000000000000000000000000000000000000000000000005
+    // 7474425443000000000000000000000000000000000000000000000000000000
     const {
       name, symbol, decimals, chainId, fromContractAddress, userAddress, amount, txHash,
     } = param;
@@ -119,15 +133,15 @@ class TokenManagerDataBuilder {
     }
 
     let strLocation = 8 * 32; // 8 param * 32 byte
-    const encodeName = this.encodeString(name);
-    const encodeSymbol = this.encodeString(this.renameSymbol(symbol));
+    const encodeName = SmartContract.encodeString(name);
+    const encodeSymbol = SmartContract.encodeString(this.renameSymbol(symbol));
 
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
-    const normalizeFromAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
+    const normalizeFromAddr = Utils.leftPad32(fromContractAddress.replace('0x', ''));
 
-    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
+    const normalizeUserAddress = Utils.leftPad32(userAddress.replace('0x', ''));
     const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
+    const normalizeTxHash = Utils.leftPad32(txHash.replace('0x', ''));
 
     let res = '0x';
     const encodeStrArr = [];
@@ -165,23 +179,6 @@ class TokenManagerDataBuilder {
     res += encodeStrArr.join('');
 
     return res;
-  }
-
-  static encodeString(string) {
-    const bufBaseStr = Buffer.from(string);
-    const hexLenStr = Utils.toHex(bufBaseStr.length);
-    // pad start
-    const bufHexLenStr = Buffer.from(Utils.leftPad32(hexLenStr), 'hex');
-
-    // pad end
-    const encodeStr = bufBaseStr.toString('hex');
-    const bufStr = Buffer.from(Utils.rightPad32(encodeStr), 'hex');
-
-    const res = Buffer.concat([bufHexLenStr, bufStr]);
-    return {
-      length: res.length,
-      data: res.toString('hex'),
-    };
   }
 
   static renameSymbol(symbol) {
