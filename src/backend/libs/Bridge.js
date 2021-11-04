@@ -81,6 +81,9 @@ class Bridge extends Bot {
       structBD.receivedTimestamp = tx.timestamp;
       structBD.finalized = false;
       structBD.amount = tx.amount;
+      structBD.name = account.name;
+      structBD.symbol = account.symbol;
+      structBD.decimals = account.decimals;
       structBD.triggerData = JSON.stringify(data.value);
 
       const jobListItem = await ModelFactory.create({ database: this.database, struct: 'jobListItem' });

@@ -11,6 +11,9 @@ class bridgeDetail {
     srcTokenAddress = '',
     destChainId = '',
     destTokenAddress = '',
+    name = 0,
+    symbol = 0,
+    decimals = 0,
     amount = '',
     srcAddress = '',
     destAddress = '',
@@ -28,6 +31,9 @@ class bridgeDetail {
     this._destChainId = destChainId;
     this._destTokenAddress = destTokenAddress;
     this._amount = amount;
+    this._name = name;
+    this._symbol = symbol;
+    this._decimals = decimals;
     this._srcAddress = srcAddress;
     this._destAddress = destAddress;
     this._srcTxHash = srcTxHash;
@@ -52,6 +58,12 @@ class bridgeDetail {
   set destTokenAddress(destTokenAddress) { this._destTokenAddress = destTokenAddress; }
 
   set amount(amount) { this._amount = amount; }
+
+  set name(name) { this._name = name; }
+
+  set symbol(symbol) { this._symbol = symbol; }
+
+  set decimals(decimals) { this._decimals = decimals; }
 
   set srcAddress(srcAddress) { this._srcAddress = srcAddress; }
 
@@ -84,6 +96,12 @@ class bridgeDetail {
 
   get amount() { return this._amount; }
 
+  get name() { return this._name; }
+
+  get symbol() { return this._symbol; }
+
+  get decimals() { return this._decimals; }
+
   get srcAddress() { return this._srcAddress; }
 
   get destAddress() { return this._destAddress; }
@@ -109,6 +127,9 @@ class bridgeDetail {
       destChainId: this.destChainId,
       destTokenAddress: this.destTokenAddress,
       amount: this.amount,
+      name: this.name,
+      symbol: this.symbol,
+      decimals: this.decimals,
       srcAddress: this.srcAddress,
       destAddress: this.destAddress,
       srcTxHash: this.srcTxHash,

@@ -388,8 +388,6 @@ class Worker extends Bot {
   async _depositStep1(jobListItemStruct, detailModel) {
     // get overview
     this.logger.debug('detailModel.struct.id', detailModel.struct.id);
-    const overview = await this.tw.overview();
-    const srcInfo = overview.currencies.find((info) => (info.id === detailModel.struct.id));
 
     const transaction = new Transaction({});
     transaction.accountId = this._accountInfo.id;
@@ -401,14 +399,14 @@ class Worker extends Bot {
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);
-    const bnDecimals = (new BigNumber(10)).pow(srcInfo.decimals);
+    const bnDecimals = (new BigNumber(10)).pow(detailModel.struct.decimals);
     const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
 
     // make token manager data
     transaction.message = TokenManagerDataBuilder.encodeMintToken({
-      name: srcInfo.name,
-      symbol: srcInfo.symbol,
-      decimals: srcInfo.decimals,
+      name: detailModel.struct.name,
+      symbol: detailModel.struct.symbol,
+      decimals: detailModel.struct.decimals,
       chainId: detailModel.struct.srcChainId,
       fromContractAddress: detailModel.struct.srcTokenAddress,
       userAddress,
