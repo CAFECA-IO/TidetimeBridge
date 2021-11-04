@@ -1,4 +1,5 @@
 const Utils = require('./Utils');
+const SmartContract = require('./SmartContract');
 
 const CONTRACT_CODE = {
   burnToken: '8523c3ca',
@@ -32,10 +33,10 @@ class TokenManagerDataBuilder {
       throw new Error('encodeBurnToken invalid input');
     }
 
-    const normalizeTokenAddr = Utils.leftPad32(Utils.toHex(tokenAddress));
+    const normalizeTokenAddr = Utils.leftPad32(tokenAddress.replace('0x', ''));
     const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
-    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
+    const normalizeUserAddress = Utils.leftPad32(userAddress.replace('0x', ''));
+    const normalizeTxHash = Utils.leftPad32(txHash.replace('0x', ''));
 
     let res = '0x';
     res += CONTRACT_CODE.burnToken;
@@ -71,7 +72,7 @@ class TokenManagerDataBuilder {
       // ++ todo add btc address decode
     }
     if (Utils.isETHLike(chainId)) {
-      normalizeAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
+      normalizeAddr = Utils.leftPad32(fromContractAddress.replace('0x', ''));
     }
 
     let res = '0x';
@@ -119,21 +120,15 @@ class TokenManagerDataBuilder {
     }
 
     let strLocation = 8 * 32; // 8 param * 32 byte
-    const encodeName = this.encodeString(name);
-    const encodeSymbol = this.encodeString(this.renameSymbol(symbol));
+    const encodeName = SmartContract.encodeString(name);
+    const encodeSymbol = SmartContract.encodeString(this.renameSymbol(symbol));
 
     const normalizeChainId = Utils.rightPad32(chainId.replace('0x', '')); // because byte4 is pad right
-    let normalizeFromAddr;
-    if (Utils.isBTCLike(chainId)) {
-      // ++ todo add btc address decode
-    }
-    if (Utils.isETHLike(chainId)) {
-      normalizeFromAddr = Utils.leftPad32(Utils.toHex(fromContractAddress));
-    }
+    const normalizeFromAddr = Utils.leftPad32(fromContractAddress.replace('0x', ''));
 
-    const normalizeUserAddress = Utils.leftPad32(Utils.toHex(userAddress));
+    const normalizeUserAddress = Utils.leftPad32(userAddress.replace('0x', ''));
     const normalizeAmount = Utils.leftPad32(Utils.decToHex(amount, { prefix: false }));
-    const normalizeTxHash = Utils.leftPad32(Utils.toHex(txHash));
+    const normalizeTxHash = Utils.leftPad32(txHash.replace('0x', ''));
 
     let res = '0x';
     const encodeStrArr = [];
@@ -171,23 +166,6 @@ class TokenManagerDataBuilder {
     res += encodeStrArr.join('');
 
     return res;
-  }
-
-  static encodeString(string) {
-    const bufBaseStr = Buffer.from(string);
-    const hexLenStr = Utils.toHex(bufBaseStr.length);
-    // pad start
-    const bufHexLenStr = Buffer.from(Utils.leftPad32(hexLenStr), 'hex');
-
-    // pad end
-    const encodeStr = bufBaseStr.toString('hex');
-    const bufStr = Buffer.from(Utils.rightPad32(encodeStr), 'hex');
-
-    const res = Buffer.concat([bufHexLenStr, bufStr]);
-    return {
-      length: res.length,
-      data: res.toString('hex'),
-    };
   }
 
   static renameSymbol(symbol) {

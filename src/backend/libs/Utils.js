@@ -52,11 +52,11 @@ class Utils {
     if (data === undefined) {
       result = '';
     } else if (this.isHex(data)) {
-      result = data.substr(2);
+      result = data.replace('0x', '');
     } else if (Number.isInteger(data)) {
       result = data.toString(16);
     } else if (typeof data === 'string') {
-      result = Buffer.from(data).toString('hex');
+      result = this.decToHex(data, { prefix: false });
     } else {
       try {
         result = data.toString(16);
@@ -65,6 +65,10 @@ class Utils {
       }
     }
     return result;
+  }
+
+  static stringToHex(data) {
+    return Buffer.from(data).toString('hex');
   }
 
   static zeroFill(i, l) {
@@ -593,6 +597,7 @@ class Utils {
       log: console.log,
       debug: base.debug ? console.log : () => {},
       trace: console.trace,
+      error: console.error,
     });
   }
 

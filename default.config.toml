@@ -10,6 +10,7 @@ debug = false
 [blockchain.base]
 type = "ethereum"
 tokenManagerAddress = ''
+addressMappingAddress = ''
 blockchainId = 'F000003C'
 protocol = "http:"
 hostname = "127.0.0.1"
@@ -30,6 +31,15 @@ hostname = "127.0.0.1"
 port = 8545
 path = "/"
 
+[blockchain.bitcoin_testnet]
+blockchain_id = "F0000000"
+protocol = "http:"
+hostname = "127.0.0.1"
+port = ""
+path = "/"
+user = ''
+password = ''
+
 [database]
 type = "firebase"
 
@@ -45,5 +55,7 @@ networkPublish = false
 [api]
 pathname = [
   "get | /,/version | Static.Utils.readPackageInfo",
-  "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress"
+  "get | /api/v1/receivedAddress | Bot.Bridge.receivedAddress",
+  "post | /api/v1/registDeposit/blockchainId/:blockchainId/address/:address | Bot.Bridge.registDeposit",
+  "post | /api/v1/registWithdraw/blockchainId/:blockchainId/fromAddress/:fromAddress | Bot.Bridge.registWithdraw"
 ]

@@ -6,9 +6,11 @@ const ModelFactory = require('./ModelFactory');
 const { JOB_STATE } = require('../structs/jobListItem');
 const Transaction = require('../structs/Transaction');
 const TokenManagerDataBuilder = require('./TokenManagerDataBuilder');
+const AddressMappingDataBuilder = require('./AddressMappingDataBuilder');
 const JsonRpc = require('./JsonRpc');
 const SupportChain = require('./SupportChain');
 const Utils = require('./Utils');
+const SmartContract = require('./SmartContract');
 
 const JOB_INTERVAL = 1000;
 const MAX_WORKER = 10;
@@ -143,13 +145,15 @@ class Worker extends Bot {
     // // resend nonce to cancel
     //   .then(async () => {
     //     const tx = {};
-    //     tx.accountId = 'eb5e61d0-6396-4c4f-a8b5-49a85b508fc3';
+    //     // tx.accountId = 'eb5e61d0-6396-4c4f-a8b5-49a85b508fc3';
     //     // tx.accountId = '87ceb934-fb50-4db8-8e50-4a225dab6f3f';
+    //     tx.accountId = '55b609e5-982e-450a-97d9-f4c27c16df2e'; // temp staging
 
     //     tx.amount = '0';
-    //     tx.to = '0x4827a06af81060bfa9353a065b25ce0598fce833';
+    //     // tx.to = '0x4827a06af81060bfa9353a065b25ce0598fce833';
     //     // tx.to = '0xa4a6f7090962f65a3dbf5f66dd2ee4184b7c7da7';
-    //     tx.nonce = 16;
+    //     tx.to = '0x9e70e26a243071fe670648e9564e1e870de2b873';// temp stanging
+    //     tx.nonce = 2;
 
     //     // get fee
     //     const resFee = await this.tw.getTransactionFee({
@@ -260,7 +264,7 @@ class Worker extends Bot {
         const overview = await this.tw.overview();
         this.logger.debug('targetAsset:', targetAsset);
         const targetInfo = overview.currencies.find((info) => {
-          const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(Utils.toHex(info.contract))}` : `0x${Utils.leftPad32('0')}`;
+          const contractAddr = info.type === 'token' ? `0x${Utils.leftPad32(info.contract.replace('0x', ''))}` : `0x${Utils.leftPad32('0')}`;
           return (targetAsset.chainId.toLowerCase() === info.blockchainId.toLowerCase()) && (targetAsset.contractAddress === contractAddr);
         });
         this.logger.debug('targetInfo:', targetInfo);
@@ -345,7 +349,28 @@ class Worker extends Bot {
 
   async getMappingAddress(blockchainId, address) {
     // find from contract
-    return address;
+    if (Utils.isETHLike(blockchainId)) return address;
+
+    const jsonrpc = new JsonRpc(this._baseChain);
+    let retry = 0;
+    let addressEndoce;
+    let addressDecoded;
+    while (retry < 3) {
+      try {
+        addressEndoce = await jsonrpc.getMappingAddress(blockchainId, address);
+        if (!addressEndoce) throw new Error('getMappingAddress something wrong');
+        addressDecoded = SmartContract.parseString(addressEndoce);
+        if (addressDecoded === '') throw new Error('mapping not found, maybe not on contract yet.', 400);
+        break;
+      } catch (error) {
+        console.log('error', error);
+        await Utils.sleep(3000);
+        retry += 1;
+      }
+    }
+    if (!addressDecoded) throw new Error('mapping not found.');
+
+    return addressDecoded;
   }
 
   async getTargetAssetInfoFromToken(detailModel) {
@@ -363,8 +388,6 @@ class Worker extends Bot {
   async _depositStep1(jobListItemStruct, detailModel) {
     // get overview
     this.logger.debug('detailModel.struct.id', detailModel.struct.id);
-    const overview = await this.tw.overview();
-    const srcInfo = overview.currencies.find((info) => (info.id === detailModel.struct.id));
 
     const transaction = new Transaction({});
     transaction.accountId = this._accountInfo.id;
@@ -372,18 +395,18 @@ class Worker extends Bot {
     transaction.to = this._baseChain.tokenManagerAddress;
 
     // get mapping address
-    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+    const userAddress = await this.getMappingAddress(detailModel.struct.srcChainId, detailModel.struct.srcAddress);
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);
-    const bnDecimals = (new BigNumber(10)).pow(srcInfo.decimals);
+    const bnDecimals = (new BigNumber(10)).pow(detailModel.struct.decimals);
     const amount = bnAmount.multipliedBy(bnDecimals).toFixed();
 
     // make token manager data
     transaction.message = TokenManagerDataBuilder.encodeMintToken({
-      name: srcInfo.name,
-      symbol: srcInfo.symbol,
-      decimals: srcInfo.decimals,
+      name: detailModel.struct.name,
+      symbol: detailModel.struct.symbol,
+      decimals: detailModel.struct.decimals,
       chainId: detailModel.struct.srcChainId,
       fromContractAddress: detailModel.struct.srcTokenAddress,
       userAddress,
