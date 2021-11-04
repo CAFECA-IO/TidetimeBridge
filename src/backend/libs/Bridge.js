@@ -67,14 +67,16 @@ class Bridge extends Bot {
   async createJob(data) {
     try {
       const { account, tx } = data.value;
-      console.log('trigger data:', data.value);
+      this.logger.debug('trigger data:', data.value);
+
+      const srcAddress = Utils.isETHLike(account.blockchainId) ? tx.sourceAddresses : tx.owner;
 
       const bridgeDetailModel = await ModelFactory.create({ database: this.database, struct: 'bridgeDetail' });
       const { struct: structBD } = bridgeDetailModel;
       structBD.srcChainId = account.blockchainId;
       structBD.id = account.id;
       structBD.srcTokenAddress = account.type === 'token' ? account.contract : '0x0000000000000000000000000000000000000000';
-      structBD.srcAddress = tx.sourceAddresses;
+      structBD.srcAddress = srcAddress;
       structBD.srcTxHash = tx.txid;
       structBD.receivedTimestamp = tx.timestamp;
       structBD.finalized = false;
