@@ -50,6 +50,7 @@ class JsonRpc {
   async getMappingAddress(chainId, fromAddress) {
     const type = 'callContract';
     const options = dvalue.clone(this._baseChain);
+    console.log('getMappingAddress', chainId, fromAddress);
     const command = AddressMappingDataBuilder.encodeGetAddress({ chainId, fromAddress });
     options.data = this.cmd({
       type,
@@ -99,7 +100,8 @@ class JsonRpc {
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error(`_getEthReceipt fail: ${JSON.stringify(data)}`);
+    // throw new Error(`_getEthReceipt fail: ${JSON.stringify(data)}`);
+    return data;
   }
 
   async _getBtcTxResult(txid) {
@@ -117,7 +119,8 @@ class JsonRpc {
       }
     }
     console.log(JSON.stringify(data));
-    throw new Error(`_getBtcTxResult fail: ${JSON.stringify(data)}`);
+    // throw new Error(`_getBtcTxResult fail: ${JSON.stringify(data)}`);
+    return data;
   }
 
   async getTx(txid) {

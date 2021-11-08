@@ -1,5 +1,6 @@
 const JOB_STATE = {
   PENDING: 'PENDING',
+  DROP: 'DROP',
   DONE: 'DONE',
 };
 
@@ -16,6 +17,7 @@ class jobListItem {
     destTxHash = '',
     mintOrBurnTxHash = '',
     step = 0,
+    state = JOB_STATE.PENDING,
     finalized = false,
   }) {
     this._pk = pk;
@@ -24,6 +26,7 @@ class jobListItem {
     this._destTxHash = destTxHash;
     this._mintOrBurnTxHash = mintOrBurnTxHash;
     this._step = step;
+    this._state = state;
     this._finalized = finalized;
   }
 
@@ -40,13 +43,13 @@ class jobListItem {
 
   set step(step) { this._step = step; }
 
+  set state(state) { this._state = state; }
+
   set finalized(finalized) { this._finalized = finalized; }
 
   // getter
   get pk() {
-    let state = JOB_STATE.PENDING;
-    if (this.finalized) state = JOB_STATE.DONE;
-    return this._pk ? this._pk : `${state}.${this.srcChainId}-${this.srcTxHash}`;
+    return this._pk ? this._pk : `${this.state}.${this.srcChainId}-${this.srcTxHash}`;
   }
 
   get srcChainId() { return this._srcChainId; }
@@ -59,6 +62,8 @@ class jobListItem {
 
   get step() { return this._step; }
 
+  get state() { return this._state; }
+
   get finalized() { return this._finalized; }
 
   get data() {
@@ -68,7 +73,8 @@ class jobListItem {
       srcTxHash: this.srcTxHash,
       destTxHash: this.destTxHash,
       mintOrBurnTxHash: this.mintOrBurnTxHash,
-      step: this._step,
+      step: this.step,
+      state: this.state,
       finalized: this.finalized,
     };
   }

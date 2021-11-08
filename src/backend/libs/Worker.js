@@ -303,6 +303,7 @@ class Worker extends Bot {
 
     jobListItemModelNew.struct = jobListItemStruct;
     jobListItemModelNew.struct.finalized = true;
+    jobListItemModelNew.struct.state = JOB_STATE.DONE;
     detailModel.struct.finalized = true;
 
     await detailModel.save();
@@ -358,18 +359,18 @@ class Worker extends Bot {
     while (retry < 3) {
       try {
         addressEndoce = await jsonrpc.getMappingAddress(blockchainId, address);
+        console.log('addressEndoce:', addressEndoce);
         if (!addressEndoce) throw new Error('getMappingAddress something wrong');
         addressDecoded = SmartContract.parseString(addressEndoce);
         if (addressDecoded === '') throw new Error('mapping not found, maybe not on contract yet.', 400);
         break;
       } catch (error) {
         console.log('error', error);
+        if (retry >= 3) break;
         await Utils.sleep(3000);
         retry += 1;
       }
     }
-    if (!addressDecoded) throw new Error('mapping not found.');
-
     return addressDecoded;
   }
 
@@ -396,6 +397,10 @@ class Worker extends Bot {
 
     // get mapping address
     const userAddress = await this.getMappingAddress(detailModel.struct.srcChainId, detailModel.struct.srcAddress);
+    if (!userAddress) {
+      this.dropJob(jobListItemStruct, detailModel);
+      throw new Error('mapping not exist, drop this job.');
+    }
 
     // caculate amount to smallest unit
     const bnAmount = new BigNumber(detailModel.struct.amount);
@@ -447,7 +452,11 @@ class Worker extends Bot {
     transaction.amount = detailModel.struct.amount;
 
     // get mapping address
-    const userAddress = await this.getMappingAddress(detailModel.struct.blockchainId, detailModel.struct.srcAddress);
+    const userAddress = await this.getMappingAddress(targetInfo.blockchainId, detailModel.struct.srcAddress);
+    if (!userAddress) {
+      this.dropJob(jobListItemStruct, detailModel);
+      throw new Error('mapping not found.');
+    }
     transaction.to = userAddress;
 
     // get fee
@@ -481,10 +490,16 @@ class Worker extends Bot {
     const jsonrpc = new JsonRpc(this.config.blockchain[SupportChain[targetInfo.blockchainId]]);
 
     const res = await jsonrpc.getTargetTxResult(jobListItemStruct.destTxHash);
+    if (res.error) {
+      if (Utils.isBTCLike(targetInfo.blockchainId) && res.code === -5) {
+        // transaction not found, retry step1
+        await this._resetStep(jobListItemStruct, detailModel, 1);
+        throw new Error('transaction not found');
+      }
+    }
 
     if (Utils.isETHLike(targetInfo.blockchainId)) {
       const receipt = res;
-      let success = true;
       if (!receipt) {
         const pendingTxs = await jsonrpc.getTx(jobListItemStruct.destTxHash);
         this.logger.debug('pendingTxs', pendingTxs);
@@ -493,29 +508,24 @@ class Worker extends Bot {
           throw new Error('receipt not found');
         } else {
           // ++ retry step1
-          success = false;
-
-          jobListItemStruct.step = 1;
-          jobListItemStruct.destTxHash = '';
-
-          detailModel.struct.step = 1;
-          detailModel.struct.destTxHash = '';
-          await this.updateJob(jobListItemStruct, detailModel, success);
+          await this._resetStep(jobListItemStruct, detailModel, 1);
           throw new Error('transaction has been thrown');
         }
       }
       if (receipt.status !== '0x1') {
         // fail, retry step1
-        success = false;
-
-        jobListItemStruct.step = 1;
-        jobListItemStruct.destTxHash = '';
-
-        detailModel.struct.step = 1;
-        detailModel.struct.destTxHash = '';
+        await this._resetStep(jobListItemStruct, detailModel, 1);
+        throw new Error('receipt status fail');
       }
-      await this.updateJob(jobListItemStruct, detailModel, success);
     }
+    if (Utils.isBTCLike(targetInfo.blockchainId)) {
+      if (!(res.confirmations && res.blockhash)) {
+        // transaction pending
+        await Utils.sleep(5 * 60 * 1000); // 5 min
+        throw new Error('transaction pending');
+      }
+    }
+    await this.updateJob(jobListItemStruct, detailModel, true);
   }
 
   async _withdrawStep3(jobListItemStruct, detailModel, targetInfo) {
@@ -565,6 +575,57 @@ class Worker extends Bot {
     } else {
       throw new Error('_withdrawStep3 sendTransaction fail.');
     }
+  }
+
+  async _resetStep(jobListItemStruct, detailModel, step) {
+    switch (step) {
+      case 1:
+        jobListItemStruct.step = 1;
+        jobListItemStruct.destTxHash = '';
+
+        detailModel.struct.step = 1;
+        detailModel.struct.destTxHash = '';
+        break;
+      case 2:
+        jobListItemStruct.step = 2;
+        detailModel.struct.step = 2;
+      default:
+        return {};
+    }
+    await this.updateJob(jobListItemStruct, detailModel, false);
+  }
+
+  async dropJob(jobListItemStruct, detailModel) {
+    const oriPk = jobListItemStruct.pk;
+    // 1. save ori pk
+    // 2. save new pk with DONE_PREFIX
+    // 3. save jobListItem with newPk into db
+    // 4. remove oriPk from db
+    // 5. remove workingList
+
+    const jobListItemModelNew = await ModelFactory.create({
+      database: this.database,
+      struct: this.tableName,
+    });
+
+    jobListItemModelNew.struct = jobListItemStruct;
+    jobListItemModelNew.struct.state = JOB_STATE.DROP;
+    jobListItemModelNew.struct.finalized = true;
+    detailModel.struct.finalized = true;
+
+    await detailModel.save();
+    const saveRes = await jobListItemModelNew.save();
+
+    const removeRes = await ModelFactory.remove({
+      database: this.database,
+      struct: this.tableName,
+      condition: {
+        key: oriPk,
+      },
+    });
+    this.logger.debug(saveRes);
+
+    delete this.workingList[oriPk];
   }
 }
 

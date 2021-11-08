@@ -127,7 +127,8 @@ class Bridge extends Bot {
 
   async registDeposit({ params }) {
     try {
-      const { blockchainId, address } = params;
+      const { blockchainId } = params;
+      const address = params.fromAddress.startsWith('0x') ? params.fromAddress.toLowerCase() : params.fromAddress;
 
       const overview = await this.tw.overview();
       const findCurrency = overview.currencies.find((cur) => (cur.type === 'currency' && cur.blockchainId === blockchainId));
@@ -154,8 +155,9 @@ class Bridge extends Bot {
 
   async registWithdraw({ params, body }) {
     try {
-      const { blockchainId, fromAddress } = params;
-      const { toAddress } = body;
+      const { blockchainId } = params;
+      const fromAddress = params.fromAddress.startsWith('0x') ? params.fromAddress.toLowerCase() : params.fromAddress;
+      const toAddress = body.toAddress.startsWith('0x') ? body.toAddress.toLowerCase() : body.toAddress;
 
       // don't await
       const recordRes = this._setWithdrawAddress(blockchainId, fromAddress, toAddress);
